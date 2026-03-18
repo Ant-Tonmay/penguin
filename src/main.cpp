@@ -7,6 +7,8 @@
 #include "interpreter/interpreter.h"
 #include "vm/compiler.h"
 #include "vm/vm.h"
+#include "vm/utils/serializer.h"
+#include "vm/utils/deserializer.h"
 
 static void printInfo() {
     std::cout << "Hello i am penguin , A brand new programming language !!\n";
@@ -47,13 +49,25 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    bool useVM = false;
+    enum class Mode {
+        INTERPRET,
+        COMPILE_TO_FILE,
+        RUN_FROM_FILE
+    };
+    Mode mode = Mode::INTERPRET;
     std::string filename;
 
     if (arg1 == "--vm") {
-        useVM = true;
+        mode = Mode::RUN_FROM_FILE;
         if (argc != 3) {
-            std::cerr << "Usage: penguin --vm <file.pg>\n";
+            std::cerr << "Usage: penguin --vm <file.pgc>\n";
+            return 1;
+        }
+        filename = argv[2];
+    } else if (arg1 == "--compile") {
+        mode = Mode::COMPILE_TO_FILE;
+        if (argc != 3) {
+            std::cerr << "Usage: penguin --compile <file.pg>\n";
             return 1;
         }
         filename = argv[2];
@@ -63,6 +77,28 @@ int main(int argc, char* argv[]) {
              return 1;
         }
         filename = argv[1];
+    }
+
+    if (mode == Mode::RUN_FROM_FILE) {
+        std::vector<vm::FunctionObject*> compiledFunctions;
+        vm::FunctionObject* script = nullptr;
+        if (!vm::Deserializer::deserialize(filename, compiledFunctions, script)) {
+            return 1;
+        }
+        vm::VM vmInstance;
+        // Register all compiled functions as globals
+        for (auto* fn : compiledFunctions) {
+            if (!fn->isMethod) {
+                vmInstance.globals[fn->name] = fn;
+            }
+        }
+        try {
+            vmInstance.run(script);
+        } catch (const std::exception& e) {
+            std::cerr << "Runtime error: " << e.what() << "\n";
+            return 1;
+        }
+        return 0;
     }
 
     // 1. Read source file
@@ -86,18 +122,19 @@ int main(int argc, char* argv[]) {
         Parser parser(tokens);
         auto program = parser.parse();
 
-        // 4. Interpret
-        if (useVM) {
+        // 4. Interpret / Compile
+        if (mode == Mode::COMPILE_TO_FILE) {
              vm::Compiler compiler;
              auto* script = compiler.compile(program.get());
-             vm::VM vmInstance;
-             // Register all compiled functions as globals
-             for (auto* fn : compiler.compiledFunctions) {
-                 if (!fn->isMethod) {
-                     vmInstance.globals[fn->name] = fn;
-                 }
+             std::string outFile = filename;
+             if (outFile.length() > 3 && outFile.substr(outFile.length() - 3) == ".pg") {
+                 outFile += "c";
+             } else {
+                 outFile += ".pgc";
              }
-             vmInstance.run(script);
+             if (vm::Serializer::serialize(outFile, compiler.compiledFunctions, script)) {
+                 std::cout << "Successfully compiled to " << outFile << "\n";
+             }
         } else {
              Interpreter interpreter;
              interpreter.executeProgram(program.get());
