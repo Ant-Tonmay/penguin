@@ -41,6 +41,14 @@ private:
     AccessModifier parseAccessModifier();
     std::unique_ptr<ClassMember> parseClassMember();
 
+    std::unique_ptr<TraitStmt> parseTraitStmt();
+    std::unique_ptr<TraitSection> parseTraitSection();
+    TraitAccessModifier parseTraitAccessModifier();
+    std::unique_ptr<TraitMember> parseTraitMember();
+
+    std::unique_ptr<TraitFieldDecl> parseTraitFieldDecl();
+    std::unique_ptr<TraitMethodDecl> parseTraitMethodDecl();
+
     std::unique_ptr<FieldDecl> parseFieldDecl();
     std::unique_ptr<MethodDecl> parseMethodDecl();
     std::unique_ptr<MethodDef> parseMethodDef();

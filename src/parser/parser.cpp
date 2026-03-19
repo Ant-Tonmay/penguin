@@ -13,6 +13,8 @@ std::unique_ptr<Program> Parser::parse() {
     while (!check(TokenType::RBRACE) && !isAtEnd()) {
         if (check(TokenType::KEYWORD) && peek().lexeme == "class") {
             program->classes.push_back(parseClassStmt());
+        } else if (check(TokenType::KEYWORD) && peek().lexeme == "trait") {
+            program->traits.push_back(parseTraitStmt());
         } else {
             program->functions.push_back(parseFunction());
         }
@@ -102,6 +104,10 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
     }
     if (check(TokenType::KEYWORD) && peek().lexeme == "class") {
         return parseClassStmt();
+    }
+
+    if (check(TokenType::KEYWORD) && peek().lexeme == "trait") {
+        return parseTraitStmt();
     }
     if (match(TokenType::KEYWORD) && previous().lexeme == "return") {
         std::unique_ptr<Expr> value = nullptr;
@@ -453,6 +459,106 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     throw std::runtime_error("Expect expression.");
 }
 
+std::unique_ptr<TraitStmt> Parser::parseTraitStmt(){
+    consume(TokenType::KEYWORD, "Expect 'trait' keyword.");
+    Token name = consume(TokenType::IDENTIFIER, "Expect trait name.");
+    std::vector<std::string> parents;
+    if (check(TokenType::KEYWORD) && peek().lexeme == "inherits") {
+        advance();
+        do {
+            Token parent = consume(TokenType::IDENTIFIER, "Expect trait name.");
+            parents.push_back(parent.lexeme);
+        } while (match(TokenType::COMMA));
+    }
+    consume(TokenType::LBRACE, "Expect '{' after trait name.");
+
+    std::vector<std::unique_ptr<TraitSection>> sections;
+    
+    while (!check(TokenType::RBRACE) && !isAtEnd()) {
+        if (check(TokenType::KEYWORD) && (peek().lexeme == "private")){
+            throw std::runtime_error("trait cannot have private feild");
+        }
+        if (check(TokenType::KEYWORD) && (peek().lexeme == "public" || peek().lexeme == "protected" || peek().lexeme == "shared")) {
+            sections.push_back(parseTraitSection());
+        } else {
+            auto member = parseTraitMember();
+            std::vector<std::unique_ptr<TraitMember>> members;
+            members.push_back(std::move(member));
+            sections.push_back(std::make_unique<TraitSection>(TraitAccessModifier::PUBLIC, std::move(members)));
+        }
+    }
+
+    consume(TokenType::RBRACE, "Expect '}' after trait body.");
+    return std::make_unique<TraitStmt>(name.lexeme, std::move(sections), std::move(parents));
+}
+
+std::unique_ptr<TraitSection> Parser::parseTraitSection() {
+    TraitAccessModifier modifier = parseTraitAccessModifier();
+    consume(TokenType::LBRACE, "Expect '{' after access modifier.");
+    std::vector<std::unique_ptr<TraitMember>> members;
+
+    while (!check(TokenType::RBRACE) && !isAtEnd()) {
+        members.push_back(parseTraitMember());
+    }
+
+    consume(TokenType::RBRACE, "Expect '}' after section.");
+
+    return std::make_unique<TraitSection>(modifier, std::move(members));
+}
+TraitAccessModifier Parser::parseTraitAccessModifier() {
+    if (match(TokenType::KEYWORD)) {
+        std::string word = previous().lexeme;
+
+        if (word == "public") return TraitAccessModifier::PUBLIC;
+        if (word == "protected") return TraitAccessModifier::PROTECTED;
+        if (word == "shared") return TraitAccessModifier::SHARED;
+    }
+
+    throw std::runtime_error("Expected access modifier (public/protected/shared)");
+}
+
+std::unique_ptr<TraitMember> Parser::parseTraitMember() {
+    if (check(TokenType::KEYWORD)) {
+        std::string lexeme = peek().lexeme;
+        
+        if (lexeme == "dec") {
+            advance(); 
+            consume(TokenType::COLON, "Expect ':' after dec.");
+
+            Token name = consume(TokenType::IDENTIFIER, "Expect identifier.");
+
+            if (match(TokenType::LPAREN)) {
+                std::vector<Param> params;
+                if (!check(TokenType::RPAREN)) {
+                    do {
+                        bool isRef = false;
+                        if (match(TokenType::KEYWORD) && previous().lexeme == "ref") {
+                            consume(TokenType::COLON, "Expect ':' after ref.");
+                            isRef = true;
+                        }
+                        Token paramName = consume(TokenType::IDENTIFIER, "Expect parameter name.");
+                        params.emplace_back(paramName.lexeme, isRef);
+                    } while (match(TokenType::COMMA));
+                }
+                consume(TokenType::RPAREN, "Expect ')' after parameters.");
+                consume(TokenType::SEMICOLON, "Expect ';' after method declaration.");
+                return std::make_unique<TraitMethodDecl>(name.lexeme, std::move(params));
+            }
+
+            std::unique_ptr<Expr> initializer = nullptr;
+            if (match(TokenType::EQUAL)) {
+                initializer = parseExpression();
+            }
+
+            consume(TokenType::SEMICOLON, "Expect ';' after field.");
+            return std::make_unique<TraitFieldDecl>(name.lexeme, std::move(initializer));
+        }
+    }
+
+    throw std::runtime_error("Invalid trait member. Found: " + peek().lexeme);
+}
+
+
 std::unique_ptr<ClassStmt> Parser::parseClassStmt() {
     consume(TokenType::KEYWORD, "Expect 'class' keyword.");
     Token name = consume(TokenType::IDENTIFIER, "Expect class name.");
@@ -461,6 +567,15 @@ std::unique_ptr<ClassStmt> Parser::parseClassStmt() {
         advance();
         Token parent = consume(TokenType::IDENTIFIER, "Expect class name.");
         parentName = parent.lexeme;
+    }
+    
+    std::vector<std::string> impls;
+    if (check(TokenType::KEYWORD) && peek().lexeme == "impl") {
+        advance();
+        do {
+            Token traitName = consume(TokenType::IDENTIFIER, "Expect trait name.");
+            impls.push_back(traitName.lexeme);
+        } while (match(TokenType::COMMA));
     }
     
 
@@ -481,7 +596,7 @@ std::unique_ptr<ClassStmt> Parser::parseClassStmt() {
 
     consume(TokenType::RBRACE, "Expect '}' after class body.");
 
-    return std::make_unique<ClassStmt>(name.lexeme, std::move(sections), parentName);
+    return std::make_unique<ClassStmt>(name.lexeme, std::move(sections), parentName, std::move(impls));
 }
 
 std::unique_ptr<ClassSection> Parser::parseSection() {

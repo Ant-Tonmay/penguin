@@ -118,6 +118,8 @@ void Lexer::identifier() {
         {"protected",TokenType::KEYWORD},
         {"inherits",TokenType::KEYWORD},
         {"shared",TokenType::KEYWORD},
+        {"trait",TokenType::KEYWORD},
+        {"impl",TokenType::KEYWORD},
         
     };
 

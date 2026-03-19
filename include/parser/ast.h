@@ -17,6 +17,12 @@ enum class AccessModifier {
     SHARED
 };
 
+enum class TraitAccessModifier {
+    SHARED,
+    PROTECTED,
+    PUBLIC
+};
+
 
 struct Expr : ASTNode {};
 
@@ -207,6 +213,27 @@ struct ClassMember : ASTNode {
     virtual ~ClassMember() = default;
 };
 
+struct TraitMember : ASTNode
+{
+    virtual ~TraitMember() = default;
+};
+
+struct TraitFieldDecl : TraitMember {
+    std::string name;
+    std::unique_ptr<Expr> initializer;
+
+    explicit TraitFieldDecl(std::string name, std::unique_ptr<Expr> initializer = nullptr)
+        : name(std::move(name)), initializer(std::move(initializer)) {}
+};
+
+struct TraitMethodDecl : TraitMember {
+    std::string name;
+    std::vector<Param> params;
+
+    TraitMethodDecl(std::string name, std::vector<Param> params)
+        : name(std::move(name)), params(std::move(params)) {}
+};
+
 struct FieldDecl : ClassMember {
     std::string name;
     std::unique_ptr<Expr> initializer;
@@ -245,20 +272,50 @@ struct ClassSection : ASTNode {
         : modifier(modifier),
           members(std::move(members)) {}
 };
+
+struct TraitSection : ASTNode {
+    TraitAccessModifier modifier;
+    std::vector<std::unique_ptr<TraitMember>> members;
+
+    TraitSection(TraitAccessModifier modifier,
+                 std::vector<std::unique_ptr<TraitMember>> members)
+        : modifier(modifier),
+          members(std::move(members)) {}
+};
+
 struct ClassStmt : Stmt {
     std::string name;
     std::string parentName; 
+    std::vector<std::string> impls;
     std::vector<std::unique_ptr<ClassSection>> sections;
 
     ClassStmt(std::string name,
               std::vector<std::unique_ptr<ClassSection>> sections,
-              std::string parentName = "")
+              std::string parentName = "",
+              std::vector<std::string> impls = {})
+        : name(std::move(name)),
+          parentName(std::move(parentName)),
+          impls(std::move(impls)),
+          sections(std::move(sections)) {}
+};
+
+struct TraitStmt : Stmt {
+    std::string name;
+    std::vector<std::string> parents;
+    std::vector<std::unique_ptr<TraitSection>> sections;
+
+    TraitStmt(std::string name,
+              std::vector<std::unique_ptr<TraitSection>> sections,
+              std::vector<std::string> parents = {})
         : name(std::move(name)),
           sections(std::move(sections)),
-          parentName(std::move(parentName)) {}
+          parents(std::move(parents)) {}
+
+
 };
 
 struct Program : ASTNode {
     std::vector<std::unique_ptr<Function>> functions;
     std::vector<std::unique_ptr<ClassStmt>> classes;
+    std::vector<std::unique_ptr<TraitStmt>> traits;
 };

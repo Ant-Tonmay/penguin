@@ -10,6 +10,7 @@ statement   →
       return_stmt ";"
     | break_stmt ";"
     | class_stmt
+    | trait_stmt
     | continue_stmt ";"
     | assignment_stmt ";"
     | print_stmt ";"
@@ -19,8 +20,28 @@ statement   →
     | while_stmt
     | block
 
+trait_stmt
+    → "trait" IDENTIFIER "inherits" IDENTIFIER ("," IDENTIFIER)* "{"train_section*"}"
+
+train_section
+    → trait_access_modifers "{" trait_member* "}"
+    | "shared" IDENTIFIER "=" expression ";"
+
+trait_member
+    → trait_method_decl
+
+trait_method_decl
+    → "dec" ":" IDENTIFIER "(" params? ")" ";"
+
+trait_access_modifers
+     →
+        | "public"
+        | "protected"
+
+
 class_stmt
-    →  "class" IDENTIFIER ("inherits" IDENTIFIER)? "{" section* "}"
+    →  "class" IDENTIFIER ("inherits" IDENTIFIER)? "{" section* "}" 
+    |  "class" IDENTIFIER "impl" IDENTIFIER ("," IDENTIFIER)* "{" section* "}"
 
 section
     → access_modifier "{" class_member* "}"
