@@ -73,6 +73,11 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             InstanceObject* instance = std::get<InstanceObject*>(objectValue);
             ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
 
+            if (instance->klass->sharedFields.count(name)) {
+                push(instance->klass->sharedFields[name]);
+                return true;
+            }
+
             if (instance->fields.count(name) || instance->klass->fields.count(name)) {
                 AccessModifier access = AccessModifier::PUBLIC;
                 if (instance->klass->fields.count(name)) {
@@ -131,6 +136,13 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
 
             InstanceObject* instance = std::get<InstanceObject*>(objectValue);
             ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
+            
+            if (instance->klass->sharedFields.count(name)) {
+                instance->klass->sharedFields[name] = value;
+                push(value);
+                return true;
+            }
+
             if (instance->klass->fields.count(name)) {
                 AccessModifier access = instance->klass->fields[name];
                 if (!checkAccess(instance->klass, contextClass, access)) {
@@ -152,6 +164,11 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             if (std::holds_alternative<InstanceObject*>(objectValue)) {
                 InstanceObject* instance = std::get<InstanceObject*>(objectValue);
                 ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
+
+                if (instance->klass->sharedFields.count(name)) {
+                    push(instance->klass->sharedFields[name]);
+                    return true;
+                }
 
                 if (instance->fields.count(name) || instance->klass->fields.count(name)) {
                     AccessModifier access = AccessModifier::PUBLIC;
@@ -190,6 +207,12 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             if (std::holds_alternative<InstanceObject*>(objectValue)) {
                 InstanceObject* instance = std::get<InstanceObject*>(objectValue);
                 ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
+
+                if (instance->klass->sharedFields.count(name)) {
+                    instance->klass->sharedFields[name] = value;
+                    push(value);
+                    return true;
+                }
 
                 bool allowed = true;
                 if (instance->klass->fields.count(name)) {
@@ -232,6 +255,10 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
                     continue;
                 }
                 subclass->fields[fieldPair.first] = fieldPair.second;
+            }
+            // Copy shared fields as well
+            for (const auto& sharedPair : superclass->sharedFields) {
+                subclass->sharedFields[sharedPair.first] = sharedPair.second;
             }
             return true;
         }

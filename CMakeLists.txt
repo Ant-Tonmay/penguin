@@ -35,8 +35,11 @@ add_library(penguin_core
     src/vm/vm_call.cpp
     src/vm/vm_class.cpp
     src/vm/vm_ops.cpp
+    src/vm/vm_trait.cpp
     src/vm/utils/access_utils.cpp
     src/vm/utils/value_utils.cpp
+    src/vm/utils/serializer.cpp
+    src/vm/utils/deserializer.cpp
 )
 
 target_include_directories(penguin_core

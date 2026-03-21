@@ -31,6 +31,7 @@ private:
     bool handleReturn(CallFrame& frame);
     bool handleArrayOp(CallFrame& frame, uint8_t instruction);
     bool handleClassOp(CallFrame& frame, uint8_t instruction);
+    bool handleTraitOp(CallFrame& frame, uint8_t instruction);
     bool handleCastOp(uint8_t instruction);
     bool handleInputOp(uint8_t instruction);
 };

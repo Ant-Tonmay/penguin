@@ -62,6 +62,7 @@ struct ObjectObject {
 
 struct ClassObject {
     std::string name;
+    bool isTrait = false;
     ClassObject* parent = nullptr;
     std::unordered_map<std::string, std::vector<FunctionObject*>> methods;
     std::unordered_map<std::string, AccessModifier> methodAccess;

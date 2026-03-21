@@ -10,6 +10,12 @@ bool VM::handleCall(CallFrame& frame) {
 
     if (std::holds_alternative<ClassObject*>(calleeValue)) {
         ClassObject* klass = std::get<ClassObject*>(calleeValue);
+        
+        if (klass->isTrait) {
+            std::cerr << "Runtime error: Cannot instantiate trait '" << klass->name << "' directly." << std::endl;
+            return false;
+        }
+
         InstanceObject* instance = new InstanceObject(klass);
 
         if (klass->methods.count(klass->name)) {

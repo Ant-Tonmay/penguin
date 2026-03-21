@@ -112,6 +112,9 @@ FunctionObject* Compiler::compile(ASTNode* node) {
         locals.clear();
         scopeDepth = 0;
 
+        for(const auto& trait : program->traits){
+            compileStmt(trait.get());
+        }
         for (const auto& cls : program->classes) {
             compileStmt(cls.get());
         }

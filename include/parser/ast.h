@@ -308,8 +308,8 @@ struct TraitStmt : Stmt {
               std::vector<std::unique_ptr<TraitSection>> sections,
               std::vector<std::string> parents = {})
         : name(std::move(name)),
-          sections(std::move(sections)),
-          parents(std::move(parents)) {}
+          parents(std::move(parents)),
+          sections(std::move(sections)) {}
 
 
 };

@@ -59,6 +59,7 @@ enum OpCode {
     OP_ARRAY_LENGTH,
     OP_PRINTLN,
     OP_CLASS,
+    OP_TRAIT,
     OP_METHOD,
     OP_GET_PROPERTY,
     OP_SET_PROPERTY,

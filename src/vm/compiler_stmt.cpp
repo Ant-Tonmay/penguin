@@ -294,6 +294,19 @@ void Compiler::compileStmt(ASTNode* node) {
             }
             emit(OP_INHERIT);
         }
+        
+        for (const auto& implName : classStmt->impls) {
+            int implArg = resolveLocal(implName);
+            if (implArg != -1) {
+                emit(OP_GET_LOCAL);
+                emit(implArg);
+            } else {
+                int implIdx = currentChunk().addConstant(implName);
+                emit(OP_GET_GLOBAL);
+                emit(implIdx);
+            }
+            emit(OP_INHERIT);
+        }
 
         for (const auto& section : classStmt->sections) {
             for (const auto& member : section->members) {
@@ -361,6 +374,93 @@ void Compiler::compileStmt(ASTNode* node) {
                     emit(OP_METHOD);
                     emit(methodNameIdx);
                     emit(static_cast<uint8_t>(section->modifier));
+                }
+            }
+        }
+
+        emit(OP_POP);
+    } else if (auto* traitStmt = dynamic_cast<TraitStmt*>(node)) {
+        int nameIdx = currentChunk().addConstant(traitStmt->name);
+        emit(OP_TRAIT);
+        emit(nameIdx);
+
+        int arg = resolveLocal(traitStmt->name);
+        bool isLocal = true;
+        if (arg == -1 && scopeDepth > 0) {
+            addLocal(traitStmt->name);
+            arg = locals.size() - 1;
+        } else if (arg == -1 && scopeDepth == 0) {
+            isLocal = false;
+            arg = currentChunk().addConstant(traitStmt->name);
+        }
+
+        if (isLocal) {
+            emit(OP_SET_LOCAL);
+            emit(arg);
+        } else {
+            emit(OP_SET_GLOBAL);
+            emit(arg);
+        }
+
+        for (const auto& parentName : traitStmt->parents) {
+            int parentArg = resolveLocal(parentName);
+            if (parentArg != -1) {
+                emit(OP_GET_LOCAL);
+                emit(parentArg);
+            } else {
+                int parentIdx = currentChunk().addConstant(parentName);
+                emit(OP_GET_GLOBAL);
+                emit(parentIdx);
+            }
+            emit(OP_INHERIT);
+        }
+
+        for (const auto& section : traitStmt->sections) {
+            for (const auto& member : section->members) {
+                if (auto* field = dynamic_cast<TraitFieldDecl*>(member.get())) {
+                    int fieldNameIdx = currentChunk().addConstant(field->name);
+                    emit(OP_FIELD);
+                    emit(fieldNameIdx);
+                    
+                    AccessModifier am = AccessModifier::PUBLIC;
+                    if (section->modifier == TraitAccessModifier::SHARED) am = AccessModifier::SHARED;
+                    else if (section->modifier == TraitAccessModifier::PROTECTED) am = AccessModifier::PROTECTED;
+                    
+                    emit(static_cast<uint8_t>(am));
+
+                    if (field->initializer) {
+                        if (am == AccessModifier::SHARED) {
+                            if (isLocal) {
+                                emit(OP_GET_LOCAL);
+                                emit(arg);
+                            } else {
+                                emit(OP_GET_GLOBAL);
+                                emit(arg);
+                            }
+                            compileExpr(field->initializer.get());
+                            emit(OP_SET_PROPERTY);
+                            emit(fieldNameIdx);
+                            emit(OP_POP);
+                        } else {
+                            throw std::runtime_error("Instance field initializers are not yet supported in traits.");
+                        }
+                    }
+                } else if (auto* method = dynamic_cast<TraitMethodDecl*>(member.get())) {
+                    auto* fnObj = new FunctionObject(method->name, method->params.size() + 1, true);
+                    fnObj->chunk.write(OP_NULL);
+                    fnObj->chunk.write(OP_RETURN);
+                    compiledFunctions.push_back(fnObj);
+
+                    emitConstant(fnObj);
+                    int methodNameIdx = currentChunk().addConstant(method->name);
+                    emit(OP_METHOD);
+                    emit(methodNameIdx);
+                    
+                    AccessModifier am = AccessModifier::PUBLIC;
+                    if (section->modifier == TraitAccessModifier::SHARED) am = AccessModifier::SHARED;
+                    else if (section->modifier == TraitAccessModifier::PROTECTED) am = AccessModifier::PROTECTED;
+                    
+                    emit(static_cast<uint8_t>(am));
                 }
             }
         }
