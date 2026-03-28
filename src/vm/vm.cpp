@@ -145,6 +145,9 @@ bool VM::executeInstruction(CallFrame& frame, uint8_t instruction) {
         case OP_FIELD:
             return handleClassOp(frame, instruction);
 
+        case OP_TRAIT:
+            return handleTraitOp(frame, instruction); 
+
         case OP_CAST_INT:
         case OP_CAST_FLOAT:
         case OP_CAST_STRING:
