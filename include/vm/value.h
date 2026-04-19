@@ -40,14 +40,18 @@ using Value = std::variant<
 struct Chunk {
     std::vector<uint8_t> code;
     std::vector<Value> constants;
+    std::vector<SourceLocation> locations;
 
-    void write(uint8_t byte) {
+    void write(uint8_t byte, SourceLocation loc = {"", 0, 0}) {
         code.push_back(byte);
+        locations.push_back(loc);
     }
 
-    void write16(uint16_t value) {
+    void write16(uint16_t value, SourceLocation loc = {"", 0, 0}) {
         code.push_back((value >> 8) & 0xff);
+        locations.push_back(loc);
         code.push_back(value & 0xff);
+        locations.push_back(loc);
     }
 
     int addConstant(Value v) {

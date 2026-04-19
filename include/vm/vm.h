@@ -21,6 +21,7 @@ public:
     Value pop();
 
     void run(FunctionObject* script);
+    void throwRuntimeError(const std::string& message);
 
 private:
     bool executeInstruction(CallFrame& frame, uint8_t instruction);

@@ -7,8 +7,11 @@
 
 
 
+Token::Token(TokenType type, const std::string& lexeme, SourceLocation location)
+    : type(type), lexeme(lexeme), location(location) {}
+
 Token::Token(TokenType type, const std::string& lexeme)
-    : type(type), lexeme(lexeme) {}
+    : type(type), lexeme(lexeme), location{"", 0, 0} {}
 
 std::string Token::toString() const {
     std::string typeStr;
@@ -49,14 +52,29 @@ bool Lexer::isAtEnd() const {
     return current >= source.size();
 }
 char Lexer::advance() {
-    return source[current++];
+    char c = source[current++];
+    col_num++;
+    if (c == '\n') {
+        line_num++;
+        col_num = 1;
+        line_start = current;
+    }
+    return c;
 }
 char Lexer::peek() const {
     if (isAtEnd()) return '\0';
     return source[current];
 }
 void Lexer::addToken(TokenType type, const std::string& lexeme) {
-    tokens.emplace_back(type, lexeme);
+    size_t end_of_line = source.find('\n', line_start);
+    if (end_of_line == std::string::npos) end_of_line = source.length();
+    std::string current_line_str = source.substr(line_start, end_of_line - line_start);
+    
+    int token_col = col_num - lexeme.length();
+    if (token_col < 1) token_col = 1;
+
+    SourceLocation loc{current_line_str, line_num, token_col};
+    tokens.emplace_back(type, lexeme, loc);
 }
 
 void Lexer::number() {
@@ -278,7 +296,11 @@ std::vector<Token> Lexer::tokenize() {
             }
         }
 
-    addToken(TokenType::EOF_TOKEN, "");
+    size_t end_of_line = source.find('\n', line_start);
+    if (end_of_line == std::string::npos) end_of_line = source.length();
+    std::string current_line_str = source.substr(line_start, end_of_line - line_start);
+    SourceLocation loc{current_line_str, line_num, col_num};
+    tokens.emplace_back(TokenType::EOF_TOKEN, "", loc);
     return tokens;
 }
 

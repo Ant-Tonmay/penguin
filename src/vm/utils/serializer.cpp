@@ -39,6 +39,13 @@ void Serializer::writeChunk(std::ofstream& out, const Chunk& chunk) {
     for (const Value& val : chunk.constants) {
         writeValue(out, val);
     }
+
+    writePrimitive<uint32_t>(out, static_cast<uint32_t>(chunk.locations.size()));
+    for (const SourceLocation& loc : chunk.locations) {
+        writeString(out, loc.line);
+        writePrimitive<int32_t>(out, loc.line_num);
+        writePrimitive<int32_t>(out, loc.col_num);
+    }
 }
 
 void Serializer::writeValue(std::ofstream& out, const Value& val) {

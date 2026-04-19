@@ -6,6 +6,7 @@
 namespace vm {
 
 void Compiler::compileExpr(ASTNode* node) {
+    if (node) currentLocation = node->loc;
     if (auto* num = dynamic_cast<NumberExpr*>(node)) {
         try {
             const std::string& s = num->value;

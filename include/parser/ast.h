@@ -7,6 +7,7 @@
 #include "lexer/lexer.h"
 
 struct ASTNode {
+    SourceLocation loc;
     virtual ~ASTNode() = default;
 };
 

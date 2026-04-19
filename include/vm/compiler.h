@@ -23,6 +23,7 @@ public:
     std::vector<Local> locals;
     int scopeDepth = 0;
     std::vector<LoopContext> loopStack;
+    SourceLocation currentLocation{"", 0, 0};
 
     FunctionObject* compile(ASTNode* node);
 

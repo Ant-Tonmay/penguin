@@ -50,6 +50,15 @@ void Deserializer::readChunk(std::ifstream& in, Chunk& chunk) {
     for (uint32_t i = 0; i < constantsSize; i++) {
         chunk.constants.push_back(readValue(in));
     }
+
+    uint32_t locationsSize = readPrimitive<uint32_t>(in);
+    chunk.locations.reserve(locationsSize);
+    for (uint32_t i = 0; i < locationsSize; i++) {
+        std::string line = readString(in);
+        int32_t line_num = readPrimitive<int32_t>(in);
+        int32_t col_num = readPrimitive<int32_t>(in);
+        chunk.locations.push_back(SourceLocation{line, line_num, col_num});
+    }
 }
 
 Value Deserializer::readValue(std::ifstream& in) {

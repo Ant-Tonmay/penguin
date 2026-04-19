@@ -1,8 +1,10 @@
+#include "exceptions/error.h"
 #include "vm/compiler.h"
 
 namespace vm {
 
 void Compiler::compileStmt(ASTNode* node) {
+    if (node) currentLocation = node->loc;
     if (auto* printStmt = dynamic_cast<PrintStmt*>(node)) {
         compileExpr(printStmt->expression.get());
         emit(OP_PRINT);
@@ -330,7 +332,7 @@ void Compiler::compileStmt(ASTNode* node) {
                             emit(fieldNameIdx);
                             emit(OP_POP);
                         } else {
-                            throw std::runtime_error("Instance field initializers are not yet supported. Please initialize them in the constructor.");
+                            throw CompileError("Instance field initializers are not yet supported. Please initialize them in the constructor.", currentLocation);
                         }
                     }
                 } else if (auto* method = dynamic_cast<MethodDef*>(member.get())) {
@@ -442,7 +444,7 @@ void Compiler::compileStmt(ASTNode* node) {
                             emit(fieldNameIdx);
                             emit(OP_POP);
                         } else {
-                            throw std::runtime_error("Instance field initializers are not yet supported in traits.");
+                            throw CompileError("Instance field initializers are not yet supported in traits.", currentLocation);
                         }
                     }
                 } else if (auto* method = dynamic_cast<TraitMethodDecl*>(member.get())) {

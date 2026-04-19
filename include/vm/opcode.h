@@ -73,6 +73,9 @@ enum OpCode {
     OP_CAST_CHAR,
     OP_TYPEOF,
     OP_READLINE,
+    OP_ALIAS,
+    OP_LOAD,
+    OP_STORE,
     OP_FIELD
 };
 

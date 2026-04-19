@@ -7,7 +7,7 @@ Chunk& Compiler::currentChunk() {
 }
 
 void Compiler::emit(uint8_t byte) {
-    currentChunk().write(byte);
+    currentChunk().write(byte, currentLocation);
 }
 
 void Compiler::emitConstant(Value value) {
@@ -30,6 +30,7 @@ void Compiler::patchJump(int offset) {
     }
     currentChunk().code[offset] = (jump >> 8) & 0xff;
     currentChunk().code[offset + 1] = jump & 0xff;
+    // Note: locations remain unchanged during patch.
 }
 
 void Compiler::emitLoop(int loopStart) {

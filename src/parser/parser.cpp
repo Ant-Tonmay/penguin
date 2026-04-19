@@ -1,4 +1,13 @@
 #include "parser/parser.h"
+#include "exceptions/error.h"
+
+template<typename T, typename... Args>
+std::unique_ptr<T> make_node(SourceLocation loc, Args&&... args) {
+    auto node = std::make_unique<T>(std::forward<Args>(args)...);
+    node->loc = loc;
+    return node;
+}
+
 #include <iostream>
 #include <stdexcept>
 
@@ -6,7 +15,7 @@
 Parser::Parser(const std::vector<Token>& tokens) : tokens(tokens), current(0) {}
 
 std::unique_ptr<Program> Parser::parse() {
-    auto program = std::make_unique<Program>();
+    auto program = make_node<Program>(peek().location);
     
     consume(TokenType::LBRACE, "Expect '{' at start of program.");
     while(!check(TokenType::RBRACE) && !isAtEnd()){
@@ -37,7 +46,7 @@ std::unique_ptr<Program> Parser::parse() {
         if (check(TokenType::KEYWORD) && peek().lexeme == "export") {
             program->exports.push_back(parseExportStmt());
         } else {
-            throw std::runtime_error("Unexpected token at end of program. Found: " + peek().lexeme);
+            throw CompileError("Unexpected token at end of program. Found: " + peek().lexeme, peek().location);
         }
     }
 
@@ -66,7 +75,7 @@ bool Parser::isAssignmentOperator(TokenType t) {
 
 std::unique_ptr<Block> Parser::parseBlock() {
     consume(TokenType::LBRACE, "Expect '{' to start block.");
-    auto block = std::make_unique<Block>();
+    auto block = make_node<Block>(previous().location);
     
     while (!check(TokenType::RBRACE) && !isAtEnd()) {
         block->statements.push_back(parseStatement());
@@ -78,11 +87,11 @@ std::unique_ptr<Block> Parser::parseBlock() {
 
 std::unique_ptr<BreakStmt> Parser::parseBreakStmt(){
     consume(TokenType::SEMICOLON, "Expect ';' after break");
-    return std::make_unique<BreakStmt>();
+    return make_node<BreakStmt>(previous().location);
 }
 std::unique_ptr<ContinueStmt> Parser::parseContinueStmt(){
     consume(TokenType::SEMICOLON, "Expect ';' after continue");
-    return std::make_unique<ContinueStmt>();
+    return make_node<ContinueStmt>(previous().location);
 }
 
 std::unique_ptr<Stmt> Parser::parseStatement() {
@@ -139,7 +148,7 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
         }
 
         consume(TokenType::SEMICOLON, "Expect ';' after return");
-        return std::make_unique<ReturnStmt>(std::move(value));
+        return make_node<ReturnStmt>(previous().location, std::move(value));
     }
     
     auto expr = parseExpression();
@@ -164,17 +173,17 @@ std::unique_ptr<Stmt> Parser::parseStatement() {
                 ) {
                 advance();
             } else {
-                throw std::runtime_error("Expect assignment operator."); 
+                throw CompileError("Expect assignment operator.", peek().location); 
             }
             
             auto nextValue = parseExpression();
             assignments.emplace_back(std::move(nextTarget), nextOp, std::move(nextValue));
         }
         consume(TokenType::SEMICOLON, "Expect ';' after assignment statement.");
-        return std::make_unique<AssignmentStmt>(std::move(assignments));
+        return make_node<AssignmentStmt>(previous().location, std::move(assignments));
     }
     consume(TokenType::SEMICOLON, "Expect ';' after expression.");
-    return std::make_unique<ExprStmt>(std::move(expr));
+    return make_node<ExprStmt>(previous().location, std::move(expr));
 }
 
 std::unique_ptr<PrintStmt> Parser::parsePrintStmt() {
@@ -183,7 +192,7 @@ std::unique_ptr<PrintStmt> Parser::parsePrintStmt() {
     consume(TokenType::LPAREN, "Expect '(' after 'print'.");
     auto expr = parseExpression();
     consume(TokenType::RPAREN, "Expect ')' after print value.");
-    return std::make_unique<PrintStmt>(std::move(expr));
+    return make_node<PrintStmt>(previous().location, std::move(expr));
 }
 
 std::unique_ptr<PrintlnStmt> Parser::parsePrintlnStmt(){
@@ -191,7 +200,7 @@ std::unique_ptr<PrintlnStmt> Parser::parsePrintlnStmt(){
     consume(TokenType::LPAREN, "Expect '(' after 'print'.");
     auto expr = parseExpression();
     consume(TokenType::RPAREN, "Expect ')' after print value.");
-    return std::make_unique<PrintlnStmt>(std::move(expr));
+    return make_node<PrintlnStmt>(previous().location, std::move(expr));
 }
 
 std::unique_ptr<AssignmentStmt> Parser::parseAssignmentStmt() {
@@ -205,17 +214,17 @@ std::unique_ptr<AssignmentStmt> Parser::parseAssignmentStmt() {
         if (isAssignmentOperator(opType)) {
             advance(); 
         } else {
-            throw std::runtime_error("Expect assignment operator after variable name.");
+            throw CompileError("Expect assignment operator after variable name.", peek().location);
         }
         auto value = parseExpression();
-        auto target = std::make_unique<VarExpr>(nameToken.lexeme);
+        auto target = make_node<VarExpr>(previous().location, nameToken.lexeme);
         
         // Pass the operator type to Assignment
         assignments.emplace_back(std::move(target), opType, std::move(value));
         
     } while (match(TokenType::COMMA));
     
-    return std::make_unique<AssignmentStmt>(std::move(assignments));
+    return make_node<AssignmentStmt>(previous().location, std::move(assignments));
 }
 
 std::unique_ptr<ForStmt> Parser::parseForStmt() {
@@ -233,7 +242,7 @@ std::unique_ptr<ForStmt> Parser::parseForStmt() {
     
     auto body = parseBlock();
     
-    return std::make_unique<ForStmt>(std::move(init), std::move(condition), std::move(increment), std::move(body));
+    return make_node<ForStmt>(previous().location, std::move(init), std::move(condition), std::move(increment), std::move(body));
 }
 
 std::unique_ptr<WhileStmt> Parser::parseWhileStmt(){
@@ -245,7 +254,7 @@ std::unique_ptr<WhileStmt> Parser::parseWhileStmt(){
 
     auto body = parseBlock();
 
-    return std::make_unique<WhileStmt>(std::move(condition), std::move(body));
+    return make_node<WhileStmt>(previous().location, std::move(condition), std::move(body));
 }
 std::unique_ptr<IfStmt> Parser::parseIfStmt() {
     advance();
@@ -268,7 +277,7 @@ std::unique_ptr<IfStmt> Parser::parseIfStmt() {
         }
     }
 
-    return std::make_unique<IfStmt>(
+    return make_node<IfStmt>(previous().location, 
         std::move(condition),
         std::move(thenBranch),
         std::move(elseBranch)
@@ -287,7 +296,7 @@ std::unique_ptr<Expr> Parser::parseLogicalOr() {
     while (match(TokenType::OR)) { 
         std::string op = previous().lexeme;
         auto right = parseLogicalAnd();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left), op, std::move(right));
     }
 
     return left;
@@ -299,7 +308,7 @@ std::unique_ptr<Expr> Parser::parseBitwiseAnd(){
     while(match(TokenType::BITWISE_AND)) {
         std::string op = previous().lexeme;
         auto right = parseEquality();
-        left = std::make_unique<BinaryExpr>(std::move(left),op,std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left),op,std::move(right));
     }
     return left;
 }
@@ -308,7 +317,7 @@ std::unique_ptr<Expr> Parser::parseBitwiseXor(){
     while(match(TokenType::BITWISE_XOR)){
         std::string op = previous().lexeme;
         auto right = parseBitwiseAnd();
-        left = std::make_unique<BinaryExpr>(std::move(left),op,std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left),op,std::move(right));
     }
     return left;
 }
@@ -318,7 +327,7 @@ std::unique_ptr<Expr> Parser::parseBitwiseOr(){
     while(match(TokenType::BITWISE_OR)){
         std::string op = previous().lexeme;
         auto right = parseBitwiseXor();
-        left = std::make_unique<BinaryExpr>(std::move(left),op,std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left),op,std::move(right));
     }
     return left;
 }
@@ -329,7 +338,7 @@ std::unique_ptr<Expr> Parser::parseLogicalAnd() {
     while (match(TokenType::AND)) { 
         std::string op = previous().lexeme;
         auto right = parseBitwiseOr();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left), op, std::move(right));
     }
 
     return left;
@@ -340,7 +349,7 @@ std::unique_ptr<Expr> Parser::parseEquality() {
     while (match(TokenType::EQUAL_EQUAL) || match(TokenType::NOT_EQUAL)) {
         std::string op = previous().lexeme;
         auto right = parseComparison();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left), op, std::move(right));
     }
 
     return left;
@@ -352,7 +361,7 @@ std::unique_ptr<Expr> Parser::parseComparison() {
            match(TokenType::GREATER) || match(TokenType::GREATER_EQUAL)) {
         std::string op = previous().lexeme;
         auto right = parseShift();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left), op, std::move(right));
     }
 
     return left;
@@ -363,7 +372,7 @@ std::unique_ptr<Expr> Parser::parseShift() {
     while (match(TokenType::LEFT_SHIFT) || match(TokenType::RIGHT_SHIFT)) {
         std::string op = previous().lexeme;
         auto right = parseAdditive();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left), op, std::move(right));
     }
 
     return left;
@@ -376,7 +385,7 @@ std::unique_ptr<Expr> Parser::parseAdditive() {
     while (match(TokenType::PLUS) || match(TokenType::MINUS)) {
         std::string op = previous().lexeme;
         auto right = parseMultiplicative();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left), op, std::move(right));
     }
     
     return left;
@@ -388,7 +397,7 @@ std::unique_ptr<Expr> Parser::parseMultiplicative() {
     while (match(TokenType::STAR) || match(TokenType::SLASH) || match(TokenType::MOD_OP)) {
         std::string op = previous().lexeme;
         auto right = parseUnary();
-        left = std::make_unique<BinaryExpr>(std::move(left), op, std::move(right));
+        left = make_node<BinaryExpr>(previous().location, std::move(left), op, std::move(right));
     }
 
     return left;
@@ -398,7 +407,7 @@ std::unique_ptr<Expr> Parser::parseUnary() {
     if (match(TokenType::NOT) || match(TokenType::MINUS)) {
         std::string op = previous().lexeme;
         auto right = parseUnary();
-        return std::make_unique<UnaryExpr>(op, std::move(right));
+        return make_node<UnaryExpr>(previous().location, op, std::move(right));
     }
     return parsePostfix();
 }
@@ -411,7 +420,7 @@ std::unique_ptr<Expr> Parser::parsePostfix() {
         if (match(TokenType::LBRACKET)) {
             auto index = parseExpression();
             consume(TokenType::RBRACKET, "Expect ']'.");
-            expr = std::make_unique<IndexExpr>(std::move(expr), std::move(index));
+            expr = make_node<IndexExpr>(previous().location, std::move(expr), std::move(index));
         }
         else if (match(TokenType::LPAREN)) {
             std::vector<std::unique_ptr<Expr>> arguments;
@@ -421,11 +430,11 @@ std::unique_ptr<Expr> Parser::parsePostfix() {
                 } while (match(TokenType::COMMA));
             }
             consume(TokenType::RPAREN, "Expect ')' after arguments.");
-            expr = std::make_unique<CallExpr>(std::move(expr), std::move(arguments));
+            expr = make_node<CallExpr>(previous().location, std::move(expr), std::move(arguments));
         }
         else if (match(TokenType::DOT)) {
             Token name = consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
-            expr = std::make_unique<MemberExpr>(std::move(expr), name.lexeme);
+            expr = make_node<MemberExpr>(previous().location, std::move(expr), name.lexeme);
         }
         else {
             break;
@@ -447,29 +456,29 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
         }
 
         consume(TokenType::RBRACKET, "Expect ']' after array literal.");
-        return std::make_unique<ArrayExpr>(std::move(elements));
+        return make_node<ArrayExpr>(previous().location, std::move(elements));
     }
 
 
     if (match(TokenType::NUMBER)) {
-        return std::make_unique<NumberExpr>(previous().lexeme);
+        return make_node<NumberExpr>(previous().location, previous().lexeme);
     }
 
     if (match(TokenType::STRING)) {
-        return std::make_unique<StringExpr>(previous().lexeme);
+        return make_node<StringExpr>(previous().location, previous().lexeme);
     }
     
     if (match(TokenType::KEYWORD)) {
         if (previous().lexeme == "true") {
-            return std::make_unique<BoolExpr>(true);
+            return make_node<BoolExpr>(previous().location, true);
         }
         if (previous().lexeme == "false") {
-            return std::make_unique<BoolExpr>(false);
+            return make_node<BoolExpr>(previous().location, false);
         }
     }
 
     if (match(TokenType::IDENTIFIER)) {
-        return std::make_unique<VarExpr>(previous().lexeme);
+        return make_node<VarExpr>(previous().location, previous().lexeme);
     }
 
     if (match(TokenType::LPAREN)) {
@@ -478,7 +487,7 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
         return expr;
     }
 
-    throw std::runtime_error("Expect expression.");
+    throw CompileError("Expect expression.", peek().location);
 }
 
 std::unique_ptr<TraitStmt> Parser::parseTraitStmt(){
@@ -498,7 +507,7 @@ std::unique_ptr<TraitStmt> Parser::parseTraitStmt(){
     
     while (!check(TokenType::RBRACE) && !isAtEnd()) {
         if (check(TokenType::KEYWORD) && (peek().lexeme == "private")){
-            throw std::runtime_error("trait cannot have private feild");
+            throw CompileError("trait cannot have private feild", peek().location);
         }
         if (check(TokenType::KEYWORD) && (peek().lexeme == "public" || peek().lexeme == "protected" || peek().lexeme == "shared")) {
             sections.push_back(parseTraitSection());
@@ -506,12 +515,12 @@ std::unique_ptr<TraitStmt> Parser::parseTraitStmt(){
             auto member = parseTraitMember();
             std::vector<std::unique_ptr<TraitMember>> members;
             members.push_back(std::move(member));
-            sections.push_back(std::make_unique<TraitSection>(TraitAccessModifier::PUBLIC, std::move(members)));
+            sections.push_back(make_node<TraitSection>(previous().location, TraitAccessModifier::PUBLIC, std::move(members)));
         }
     }
 
     consume(TokenType::RBRACE, "Expect '}' after trait body.");
-    return std::make_unique<TraitStmt>(name.lexeme, std::move(sections), std::move(parents));
+    return make_node<TraitStmt>(previous().location, name.lexeme, std::move(sections), std::move(parents));
 }
 
 std::unique_ptr<TraitSection> Parser::parseTraitSection() {
@@ -525,7 +534,7 @@ std::unique_ptr<TraitSection> Parser::parseTraitSection() {
 
     consume(TokenType::RBRACE, "Expect '}' after section.");
 
-    return std::make_unique<TraitSection>(modifier, std::move(members));
+    return make_node<TraitSection>(previous().location, modifier, std::move(members));
 }
 TraitAccessModifier Parser::parseTraitAccessModifier() {
     if (match(TokenType::KEYWORD)) {
@@ -536,7 +545,7 @@ TraitAccessModifier Parser::parseTraitAccessModifier() {
         if (word == "shared") return TraitAccessModifier::SHARED;
     }
 
-    throw std::runtime_error("Expected access modifier (public/protected/shared)");
+    throw CompileError("Expected access modifier (public/protected/shared)", peek().location);
 }
 
 std::unique_ptr<TraitMember> Parser::parseTraitMember() {
@@ -564,7 +573,7 @@ std::unique_ptr<TraitMember> Parser::parseTraitMember() {
                 }
                 consume(TokenType::RPAREN, "Expect ')' after parameters.");
                 consume(TokenType::SEMICOLON, "Expect ';' after method declaration.");
-                return std::make_unique<TraitMethodDecl>(name.lexeme, std::move(params));
+                return make_node<TraitMethodDecl>(previous().location, name.lexeme, std::move(params));
             }
 
             std::unique_ptr<Expr> initializer = nullptr;
@@ -573,11 +582,11 @@ std::unique_ptr<TraitMember> Parser::parseTraitMember() {
             }
 
             consume(TokenType::SEMICOLON, "Expect ';' after field.");
-            return std::make_unique<TraitFieldDecl>(name.lexeme, std::move(initializer));
+            return make_node<TraitFieldDecl>(previous().location, name.lexeme, std::move(initializer));
         }
     }
 
-    throw std::runtime_error("Invalid trait member. Found: " + peek().lexeme);
+    throw CompileError("Invalid trait member. Found: " + peek().lexeme, peek().location);
 }
 
 
@@ -612,13 +621,13 @@ std::unique_ptr<ClassStmt> Parser::parseClassStmt() {
             auto member = parseClassMember();
             std::vector<std::unique_ptr<ClassMember>> members;
             members.push_back(std::move(member));
-            sections.push_back(std::make_unique<ClassSection>(AccessModifier::PUBLIC, std::move(members)));
+            sections.push_back(make_node<ClassSection>(previous().location, AccessModifier::PUBLIC, std::move(members)));
         }
     }
 
     consume(TokenType::RBRACE, "Expect '}' after class body.");
 
-    return std::make_unique<ClassStmt>(name.lexeme, std::move(sections), parentName, std::move(impls));
+    return make_node<ClassStmt>(previous().location, name.lexeme, std::move(sections), parentName, std::move(impls));
 }
 
 std::unique_ptr<ClassSection> Parser::parseSection() {
@@ -634,7 +643,7 @@ std::unique_ptr<ClassSection> Parser::parseSection() {
 
     consume(TokenType::RBRACE, "Expect '}' after section.");
 
-    return std::make_unique<ClassSection>(modifier, std::move(members));
+    return make_node<ClassSection>(previous().location, modifier, std::move(members));
 }
 AccessModifier Parser::parseAccessModifier() {
     if (match(TokenType::KEYWORD)) {
@@ -646,7 +655,7 @@ AccessModifier Parser::parseAccessModifier() {
         if (word == "shared") return AccessModifier::SHARED;
     }
 
-    throw std::runtime_error("Expected access modifier (public/private/protected/shared)");
+    throw CompileError("Expected access modifier (public/private/protected/shared)", peek().location);
 }
 std::unique_ptr<ClassMember> Parser::parseClassMember() {
 
@@ -670,7 +679,7 @@ std::unique_ptr<ClassMember> Parser::parseClassMember() {
             }
 
             consume(TokenType::SEMICOLON, "Expect ';' after field.");
-            return std::make_unique<FieldDecl>(name.lexeme, std::move(initializer));
+            return make_node<FieldDecl>(previous().location, name.lexeme, std::move(initializer));
         }
         
         if (lexeme == "func") {
@@ -679,7 +688,7 @@ std::unique_ptr<ClassMember> Parser::parseClassMember() {
         }
     }
 
-    throw std::runtime_error("Invalid class member. Found: " + peek().lexeme);
+    throw CompileError("Invalid class member. Found: " + peek().lexeme, peek().location);
 }
 std::unique_ptr<MethodDecl> Parser::parseMethodDeclAfterName(std::string name) {
 
@@ -703,7 +712,7 @@ std::unique_ptr<MethodDecl> Parser::parseMethodDeclAfterName(std::string name) {
     consume(TokenType::RPAREN, "Expect ')' after parameters.");
     consume(TokenType::SEMICOLON, "Expect ';' after method declaration.");
 
-    return std::make_unique<MethodDecl>(name, std::move(params));
+    return make_node<MethodDecl>(previous().location, name, std::move(params));
 }
 std::unique_ptr<MethodDef> Parser::parseMethodDef() {
     Token name = consume(TokenType::IDENTIFIER, "Expect method name.");
@@ -731,7 +740,7 @@ std::unique_ptr<MethodDef> Parser::parseMethodDef() {
 
     auto body = parseBlock();
 
-    return std::make_unique<MethodDef>(name.lexeme, std::move(params), std::move(body));
+    return make_node<MethodDef>(previous().location, name.lexeme, std::move(params), std::move(body));
 }
 
 
@@ -769,7 +778,7 @@ Token Parser::previous() const {
 
 Token Parser::consume(TokenType type, const std::string& message) {
     if (check(type)) return advance();
-    throw std::runtime_error(message + " Found: " + peek().lexeme);
+    throw CompileError(message + " Found: " + peek().lexeme, peek().location);
 }
 std::vector<Param> Parser::parseParams(){
 
@@ -805,7 +814,7 @@ std::unique_ptr<Function> Parser::parseFunction() {
 
     auto body = parseBlock();
 
-    return std::make_unique<Function>(name, std::move(params), std::move(body));
+    return make_node<Function>(previous().location, name, std::move(params), std::move(body));
 }
 
 std::unique_ptr<IncludeStmt> Parser::parseIncludeStmt() {
@@ -826,7 +835,7 @@ std::unique_ptr<IncludeStmt> Parser::parseIncludeStmt() {
         if (check(TokenType::KEYWORD) && peek().lexeme == "from") {
             advance();
         } else {
-            throw std::runtime_error("Expect 'from' after member list.");
+            throw CompileError("Expect 'from' after member list.", peek().location);
         }
         
         Token moduleToken = consume(TokenType::IDENTIFIER, "Expect module name");
@@ -845,10 +854,10 @@ std::unique_ptr<IncludeStmt> Parser::parseIncludeStmt() {
     }
     
     consume(TokenType::SEMICOLON, "Expect ';' after include statement");
-    return std::make_unique<IncludeStmt>(name, std::move(members), "");
+    return make_node<IncludeStmt>(previous().location, name, std::move(members), "");
 }
 
-std::unique_ptr<AliasStmt> Parser::parseAliasStmt(){
+std::unique_ptr<AliasStmt> Parser::parseAliasStmt(){ 
     advance();
     Token name = consume(TokenType::IDENTIFIER , "Expect alias name");
     consume(TokenType::EQUAL, "Expect '=' after Identifier");
@@ -856,14 +865,14 @@ std::unique_ptr<AliasStmt> Parser::parseAliasStmt(){
     if (check(TokenType::KEYWORD) && peek().lexeme == "include") {
         auto includeStmt = parseIncludeStmt();
         includeStmt->alias = name.lexeme;
-        return std::make_unique<AliasStmt>(name.lexeme, std::move(includeStmt));
+        return make_node<AliasStmt>(previous().location, name.lexeme, std::move(includeStmt));
     }else{
         Token vname = consume(TokenType::IDENTIFIER , "Expect alias name");
         consume(TokenType::SEMICOLON, "Expect ';' after alias statement");
-         return std::make_unique<AliasStmt>(name.lexeme, vname.lexeme);
+         return make_node<AliasStmt>(previous().location, name.lexeme, vname.lexeme);
     }
     
-    throw std::runtime_error("Expect 'include' after '=' in alias statement.");
+    throw CompileError("Expect 'include' after '=' in alias statement.", peek().location);
 } 
 
 std::unique_ptr<ExportStmt> Parser::parseExportStmt(){
@@ -882,5 +891,5 @@ std::unique_ptr<ExportStmt> Parser::parseExportStmt(){
     
     consume(TokenType::RBRACE ,"Expected '}' .");
     consume(TokenType::SEMICOLON, "Expected ';' after } while exporting");
-    return std::make_unique<ExportStmt>(std::move(export_mods));
+    return make_node<ExportStmt>(previous().location, std::move(export_mods));
 }

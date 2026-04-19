@@ -3,8 +3,22 @@
 #include "vm/utils/value_utils.h"
 
 #include <iostream>
+#include "exceptions/error.h"
 
 namespace vm {
+
+void VM::throwRuntimeError(const std::string& message) {
+    if (frames.empty()) {
+        throw RuntimeError(message, {"", 0, 0});
+    }
+    auto& frame = frames.back();
+    SourceLocation loc = {"", 0, 0};
+    size_t idx = frame.ip > 0 ? frame.ip - 1 : 0;
+    if (!frame.function->chunk.locations.empty() && idx < frame.function->chunk.locations.size()) {
+        loc = frame.function->chunk.locations[idx];
+    }
+    throw RuntimeError(message, loc);
+}
 
 void VM::push(Value value) {
     stack.push_back(value);

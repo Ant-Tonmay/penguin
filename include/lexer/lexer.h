@@ -50,11 +50,19 @@ enum class TokenType {
     EOF_TOKEN
 };
 
+struct SourceLocation {
+    std::string line;
+    int line_num;
+    int col_num;
+    
+};
 
 struct Token {
     TokenType type;
     std::string lexeme;
+    SourceLocation location;
 
+    Token(TokenType type, const std::string& lexeme, SourceLocation location);
     Token(TokenType type, const std::string& lexeme);
     std::string toString() const;
 };
@@ -69,6 +77,10 @@ private:
     std::string source;
     std::vector<Token> tokens;
     size_t current;
+    int line_num = 1;
+    int col_num = 1;
+    size_t line_start = 0;
+    
     bool isAtEnd() const;
     char advance();
     char peek() const;

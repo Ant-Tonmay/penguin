@@ -10,6 +10,7 @@
 #include "vm/utils/serializer.h"
 #include "vm/utils/deserializer.h"
 #include "loader/module_loader.h"
+#include "exceptions/error.h"
 
 static void printInfo() {
     std::cout << "Hello i am penguin , A brand new programming language !!\n";
@@ -95,6 +96,10 @@ int main(int argc, char* argv[]) {
         }
         try {
             vmInstance.run(script);
+        } catch (const RuntimeError& e) {
+            std::cerr << "RuntimeError at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
+            std::cerr << " | " << e.loc.line << "\n";
+            return 1;
         } catch (const std::exception& e) {
             std::cerr << "Runtime error: " << e.what() << "\n";
             return 1;
@@ -123,8 +128,15 @@ int main(int argc, char* argv[]) {
              Interpreter interpreter;
              interpreter.executeProgram(program.get());
         }
-    }
-    catch (const std::exception& e) {
+    } catch (const CompileError& e) {
+        std::cerr << "Compile time error at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
+        std::cerr << " | " << e.loc.line << "\n";
+        return 1;
+    } catch (const RuntimeError& e) {
+        std::cerr << "Runtime error at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
+        std::cerr << " | " << e.loc.line << "\n";
+        return 1;
+    } catch (const std::exception& e) {
         std::cerr << "Runtime error: " << e.what() << "\n";
         return 1;
     }
