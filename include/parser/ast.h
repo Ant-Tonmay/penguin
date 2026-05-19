@@ -357,6 +357,7 @@ struct AliasStmt : Stmt {
     std::string name;
     std::unique_ptr<IncludeStmt> include;
     std::string vname;
+    std::vector<std::string> resolvedExports;
 
     // Constructor for include alias
     AliasStmt(std::string name,

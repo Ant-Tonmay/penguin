@@ -207,6 +207,20 @@ Value ExprEvaluator::visit(const CallExpr* expr, Environment* env) {
             BoundMethod* bm = std::get<BoundMethod*>(calleeVal);
             return interpreter->callMethod(bm->instance, bm->methodName, args);
         }
+
+        // Handle calling a FunctionObject* (e.g. from module alias: p1.functionName())
+        if (std::holds_alternative<FunctionObject*>(calleeVal)) {
+            FunctionObject* fnObj = std::get<FunctionObject*>(calleeVal);
+            if (fnObj->astNode) {
+                return interpreter->callUserFunction(fnObj->astNode, args);
+            }
+        }
+
+        // Handle calling a ClassObject* (e.g. from module alias: p1.ClassName())
+        if (std::holds_alternative<ClassObject*>(calleeVal)) {
+            ClassObject* klass = std::get<ClassObject*>(calleeVal);
+            return interpreter->instantiateClass(klass->name, args);
+        }
         
     }
 
@@ -337,5 +351,14 @@ Value ExprEvaluator::visit(const MemberExpr* expr, Environment* env) {
         throw std::runtime_error("Property '" + expr->name + "' not found on instance of " + obj->klass->name);
     }
 
-    throw std::runtime_error("Only instances have properties.");
+    // Module namespace objects (ObjectObject*)
+    if (std::holds_alternative<ObjectObject*>(objVal)) {
+        ObjectObject* ns = std::get<ObjectObject*>(objVal);
+        if (ns->fields.count(expr->name)) {
+            return ns->fields[expr->name];
+        }
+        throw std::runtime_error("Property '" + expr->name + "' not found on module namespace.");
+    }
+
+    throw std::runtime_error("Only instances and module namespaces have properties.");
 }

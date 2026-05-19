@@ -23,6 +23,40 @@ void Interpreter::executeProgram(const Program* program) {
     for (const auto& cls : program->classes) {
         executeStmt(cls.get(), globals);
     }
+
+    // Handle module aliases
+    for (const auto& alias : program->aliases) {
+        if (alias->include) {
+            // Create an ObjectObject to act as a module namespace
+            ObjectObject* ns = new ObjectObject();
+            for (const auto& exportName : alias->resolvedExports) {
+                // Look up the exported name: could be a function or a class
+                if (userFunctions.count(exportName)) {
+                    FunctionObject* fnObj = new FunctionObject();
+                    fnObj->astNode = userFunctions[exportName];
+                    ns->fields[exportName] = fnObj;
+                } else if (classes.count(exportName)) {
+                    ns->fields[exportName] = classes[exportName];
+                }
+            }
+            globals->define(alias->name, ns);
+        } else {
+            // Variable alias: alias newName = existingName;
+            try {
+                Value val = globals->get(alias->vname);
+                globals->define(alias->name, val);
+            } catch (...) {
+                // If the variable isn't found, check functions and classes
+                if (userFunctions.count(alias->vname)) {
+                    FunctionObject* fnObj = new FunctionObject();
+                    fnObj->astNode = userFunctions[alias->vname];
+                    globals->define(alias->name, fnObj);
+                } else if (classes.count(alias->vname)) {
+                    globals->define(alias->name, classes[alias->vname]);
+                }
+            }
+        }
+    }
     
     if (userFunctions.count("main")) {
         callUserFunction(userFunctions["main"], {});

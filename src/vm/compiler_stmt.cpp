@@ -478,6 +478,53 @@ void Compiler::compileStmt(ASTNode* node) {
         emit(OP_POP);
     } else if (auto* tryStmt = dynamic_cast<TryCatchStmt*>(node)) {
         compileTryCatchStmt(tryStmt);
+    } else if (auto* aliasStmt = dynamic_cast<AliasStmt*>(node)) {
+        if (aliasStmt->include) {
+            // Create a ClassObject to act as a module namespace
+            int nameIdx = currentChunk().addConstant(aliasStmt->name);
+            emit(OP_CLASS);
+            emit(nameIdx);
+
+            // Store the class globally under the alias name
+            int globalIdx = currentChunk().addConstant(aliasStmt->name);
+            emit(OP_SET_GLOBAL);
+            emit(globalIdx);
+
+            // For each resolved export, register it as a SHARED field and
+            // copy the global value into the class's sharedFields
+            for (const auto& exportName : aliasStmt->resolvedExports) {
+                int fieldNameIdx = currentChunk().addConstant(exportName);
+                emit(OP_FIELD);
+                emit(fieldNameIdx);
+                emit(static_cast<uint8_t>(AccessModifier::SHARED));
+
+                // Get the alias class back on the stack
+                emit(OP_GET_GLOBAL);
+                emit(globalIdx);
+
+                // Get the exported global value
+                int exportIdx = currentChunk().addConstant(exportName);
+                emit(OP_GET_GLOBAL);
+                emit(exportIdx);
+
+                // Set it as a property on the class
+                emit(OP_SET_PROPERTY);
+                emit(fieldNameIdx);
+                emit(OP_POP);
+            }
+
+            emit(OP_POP); // Pop the class from the stack
+        } else {
+            // Variable alias: alias newName = existingName;
+            int existingIdx = currentChunk().addConstant(aliasStmt->vname);
+            emit(OP_GET_GLOBAL);
+            emit(existingIdx);
+
+            int aliasIdx = currentChunk().addConstant(aliasStmt->name);
+            emit(OP_SET_GLOBAL);
+            emit(aliasIdx);
+            emit(OP_POP);
+        }
     }
 }
 

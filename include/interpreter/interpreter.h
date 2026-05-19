@@ -24,6 +24,7 @@ public:
     Value callFunctionByName(const std::string& name, const std::vector<Value>& args);
     Value callMethod(InstanceObject* instance, const std::string& methodName, const std::vector<Value>& args);
     Value instantiateClass(const std::string& className, const std::vector<Value>& args);
+    Value callUserFunction(Function* fn, const std::vector<Value>& args);
 
     std::unordered_map<std::string, ClassObject*> classes;
 
@@ -35,6 +36,5 @@ private:
     std::unique_ptr<StmtExecutor> executor;
     
     
-    Value callUserFunction(Function* fn, const std::vector<Value>& args);
     Value deepCopyIfNeeded(const Value& v);
 };

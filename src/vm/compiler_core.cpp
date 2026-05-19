@@ -120,6 +120,10 @@ FunctionObject* Compiler::compile(ASTNode* node) {
             compileStmt(cls.get());
         }
 
+        for (const auto& alias : program->aliases) {
+            compileStmt(alias.get());
+        }
+
         for (const auto& func : program->functions) {
             if (func->name == "main") {
                 beginScope();

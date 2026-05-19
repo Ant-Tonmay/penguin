@@ -173,11 +173,26 @@ void ModuleLoader::linkModuleRecursive(LoadedModule* mod, Program& out, bool isE
         return;
     }
 
-    for (const auto& alias : mod->program->aliases) {
+    for (auto& alias : mod->program->aliases) {
         if (alias->include) {
-            throw std::runtime_error(
-                "Module alias imports are not implemented yet: alias x = include module;"
-            );
+            std::string importedPath = resolveImportPath(mod->path, alias->include->name);
+            LoadedModule* imported = loadModuleFromPath(importedPath);
+
+            ensureExportedMembersExist(*imported, *alias->include);
+            linkModuleRecursive(imported, out, false);
+
+            if (alias->include->members.empty()) {
+                alias->resolvedExports.assign(imported->exports.begin(), imported->exports.end());
+            } else {
+                alias->resolvedExports = alias->include->members;
+            }
+        }
+    }
+
+    // Forward all aliases to the output program
+    for (auto& alias : mod->program->aliases) {
+        if (alias) {
+            out.aliases.push_back(std::move(alias));
         }
     }
 

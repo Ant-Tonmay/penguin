@@ -40,6 +40,7 @@ add_library(penguin_core
     src/vm/utils/value_utils.cpp
     src/vm/utils/serializer.cpp
     src/vm/utils/deserializer.cpp
+    src/loader/module_loader.cpp
 )
 
 target_include_directories(penguin_core
