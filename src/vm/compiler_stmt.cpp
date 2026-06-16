@@ -214,7 +214,6 @@ void Compiler::compileStmt(ASTNode* node) {
                 }
                 
                 emit(OP_INDEX_SET);
-                emit(OP_POP);
             } else if (auto* mem = dynamic_cast<MemberExpr*>(assign.target.get())) {
                 compileExpr(mem->object.get());
                 int nameIdx = currentChunk().addConstant(mem->name);
