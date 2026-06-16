@@ -45,6 +45,7 @@ enum class TokenType {
     COMMA,
     COLON,
     STRING,
+    CHAR,
     DOT,
     KEYWORD,
     EOF_TOKEN
@@ -88,5 +89,6 @@ private:
     void addToken(TokenType type, const std::string& lexeme);
     void number();
     void identifier();
-    void string();
+    void _string();
+    void _char();
 };

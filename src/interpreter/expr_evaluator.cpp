@@ -37,6 +37,8 @@ Value ExprEvaluator::evaluate(const Expr* expr, Environment* env) {
         return visit(num);
     } else if (auto str = dynamic_cast<const StringExpr*>(expr)) {
         return visit(str);
+    } else if (auto chr = dynamic_cast<const CharExpr*>(expr)) {
+        return visit(chr);
     } else if (auto var = dynamic_cast<const VarExpr*>(expr)) {
         return visit(var, env);
     } else if (auto arr = dynamic_cast<const ArrayExpr*>(expr)) {
@@ -69,6 +71,10 @@ Value ExprEvaluator::visit(const NumberExpr* expr) {
 }
 
 Value ExprEvaluator::visit(const StringExpr* expr) {
+    return expr->value;
+}
+
+Value ExprEvaluator::visit(const CharExpr* expr) {
     return expr->value;
 }
 

@@ -35,6 +35,7 @@ std::string Token::toString() const {
         case TokenType::SEMICOLON: typeStr = "SEMICOLON"; break;
         case TokenType::COMMA: typeStr = "COMMA"; break;
         case TokenType::STRING: typeStr = "STRING"; break;
+        case TokenType::CHAR: typeStr = "CHAR"; break;
         case TokenType::KEYWORD: typeStr = "KEYWORD"; break;
         case TokenType::EOF_TOKEN: typeStr = "EOF"; break;
         default: typeStr = "UNKNOWN"; break;
@@ -93,7 +94,7 @@ void Lexer::number() {
     addToken(TokenType::NUMBER, value);
 }
 
-void Lexer::string() {
+void Lexer::_string() {
     size_t start = current;
     while (peek() != '"' && !isAtEnd()) {
         if (peek() == '\n') {
@@ -110,6 +111,23 @@ void Lexer::string() {
     std::string value = source.substr(start, current - start);
     advance(); // Consume the closing "
     addToken(TokenType::STRING, value);
+}
+
+void Lexer::_char(){
+    if (isAtEnd()) {
+        std::cerr << "Unterminated char." << std::endl;
+        return;
+    }
+
+    char value = advance();
+
+    if (peek() != '\'') {
+        std::cerr << "Char literal must contain exactly one character." << std::endl;
+        return;
+    }
+
+    advance();
+    addToken(TokenType::CHAR, std::string(1, value));
 }
 
 void Lexer::identifier() {
@@ -281,7 +299,8 @@ std::vector<Token> Lexer::tokenize() {
             case ':': addToken(TokenType::COLON, ":"); break;
             case ',': addToken(TokenType::COMMA, ","); break;
             case '.': addToken(TokenType::DOT, "."); break;
-            case '"': string(); break;
+            case '"': _string(); break;
+            case '\'': _char(); break;
 
             case ' ':
             case '\t':
@@ -307,4 +326,3 @@ std::vector<Token> Lexer::tokenize() {
     tokens.emplace_back(TokenType::EOF_TOKEN, "", loc);
     return tokens;
 }
-

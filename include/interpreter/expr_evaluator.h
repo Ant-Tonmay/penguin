@@ -17,6 +17,7 @@ private:
 
     Value visit(const NumberExpr* expr);
     Value visit(const StringExpr* expr);
+    Value visit(const CharExpr* expr);
     Value visit(const BoolExpr* expr);
     Value visit(const VarExpr* expr, Environment* env);
     Value visit(const ArrayExpr* expr, Environment* env);

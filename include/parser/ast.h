@@ -46,6 +46,11 @@ struct StringExpr : Expr {
     explicit StringExpr(std::string value) : value(value) {}
 };
 
+struct CharExpr : Expr {
+    char value;
+    explicit CharExpr(char value) : value(value) {}
+};
+
 struct BoolExpr : Expr {
     bool value;
     explicit BoolExpr(bool value) : value(value) {}

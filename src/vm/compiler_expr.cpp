@@ -24,6 +24,8 @@ void Compiler::compileExpr(ASTNode* node) {
     } else if (auto* b = dynamic_cast<BoolExpr*>(node)) {
         if (b->value) emit(OP_TRUE);
         else emit(OP_FALSE);
+    } else if (auto* c = dynamic_cast<CharExpr*>(node)) {
+        emitConstant(c->value);
     } else if (auto* s = dynamic_cast<StringExpr*>(node)) {
         const std::string& str = s->value;
         const bool hasInterpolation = (str.find('{') != std::string::npos);

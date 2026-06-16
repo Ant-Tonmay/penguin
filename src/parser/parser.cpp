@@ -476,6 +476,10 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
     if (match(TokenType::STRING)) {
         return make_node<StringExpr>(previous().location, previous().lexeme);
     }
+
+    if (match(TokenType::CHAR)) {
+        return make_node<CharExpr>(previous().location, previous().lexeme[0]);
+    }
     
     if (match(TokenType::KEYWORD)) {
         if (previous().lexeme == "true") {
