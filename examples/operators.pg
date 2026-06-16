@@ -1,26 +1,72 @@
 {
     func main() {
-    a = 0;
-    b = 1;
-    lf = 2;
-    rf = 4;
-    c = a|b;
-    g = a&b;
-    h = a^b;
-    d = lf<<2;
-    e = rf>>2;
-    f = a && b;
-    i = a || b;
+        println("Arithmetic operators");
+        println("12 + 5 = {12 + 5}");
+        println("12 - 5 = {12 - 5}");
+        println("12 * 5 = {12 * 5}");
+        println("12 / 5 = {12 / 5}");
+        println("12 % 5 = {12 % 5}");
 
-    print(d);
-    print(e);
-    print(f);
-    print(c);
-    print(g);
-    print(h);
-    print(i);
+        println("");
+        println("String concatenation");
+        first = "Hello";
+        second = " Penguin";
+        greeting = first + second;
+        println("first + second = {greeting}");
 
+        println("");
+        println("Comparison operators");
+        println("12 > 5 = {12 > 5}");
+        println("12 >= 5 = {12 >= 5}");
+        println("12 < 5 = {12 < 5}");
+        println("12 <= 5 = {12 <= 5}");
+        println("12 == 5 = {12 == 5}");
+        println("12 != 5 = {12 != 5}");
 
-    
-  }
+        println("");
+        println("Logical operators");
+        println("true && false = {true && false}");
+        println("true || false = {true || false}");
+        println("!false = {!false}");
+        println("(12 > 5) && (5 < 9) = {(12 > 5) && (5 < 9)}");
+        println("(12 < 5) || (5 == 5) = {(12 < 5) || (5 == 5)}");
+
+        println("");
+        println("Bitwise operators");
+        println("6 & 3 = {6 & 3}");
+        println("6 | 3 = {6 | 3}");
+        println("6 ^ 3 = {6 ^ 3}");
+        println("6 << 1 = {6 << 1}");
+        println("6 >> 1 = {6 >> 1}");
+
+        println("");
+        println("Compound assignment operators");
+        value = 10;
+        value += 5;
+        println("value = 10; value += 5; value = {value}");
+        value -= 3;
+        println("value -= 3; value = {value}");
+        value *= 2;
+        println("value *= 2; value = {value}");
+        value /= 4;
+        println("value /= 4; value = {value}");
+        value %= 3;
+        println("value %= 3; value = {value}");
+
+        bits = 6;
+        bits &= 3;
+        println("bits = 6; bits &= 3; bits = {bits}");
+        bits |= 4;
+        println("bits |= 4; bits = {bits}");
+        bits ^= 1;
+        println("bits ^= 1; bits = {bits}");
+
+        println("");
+        println("Operator precedence");
+        println("2 + 3 * 4 = {2 + 3 * 4}");
+        println("(2 + 3) * 4 = {(2 + 3) * 4}");
+        println("1 + 2 << 2 = {1 + 2 << 2}");
+        println("1 + (2 << 2) = {1 + (2 << 2)}");
+        println("3 < 4 && 10 > 2 || false = {3 < 4 && 10 > 2 || false}");
+    }
 }

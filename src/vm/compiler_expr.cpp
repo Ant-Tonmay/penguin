@@ -249,6 +249,10 @@ void Compiler::compileExpr(ASTNode* node) {
         else if (bin->op == "&=") emit(OP_BITWISE_AND_EQUAL);
         else if (bin->op == "|=") emit(OP_BITWISE_OR_EQUAL);
         else if (bin->op == "^=") emit(OP_XOR_EQUAL);
+    } else if (auto* unary = dynamic_cast<UnaryExpr*>(node)) {
+        compileExpr(unary->right.get());
+        if (unary->op == "!") emit(OP_NOT);
+        else if (unary->op == "-") emit(OP_NEGATE);
     } else if (auto* mem = dynamic_cast<MemberExpr*>(node)) {
         compileExpr(mem->object.get());
         int nameIdx = currentChunk().addConstant(mem->name);
