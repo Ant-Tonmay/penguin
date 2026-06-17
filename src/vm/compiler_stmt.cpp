@@ -360,6 +360,17 @@ void Compiler::compileStmt(ASTNode* node) {
                         addLocal(param.name);
                     }
 
+                    for (size_t i = 0; i < method->params.size(); ++i) {
+                        if (!method->params[i].isRef) {
+                            emit(OP_GET_LOCAL);
+                            emit(i + 1); // 0 is reserved for 'this'
+                            emit(OP_DEEP_COPY);
+                            emit(OP_SET_LOCAL);
+                            emit(i + 1);
+                            emit(OP_POP);
+                        }
+                    }
+
                     for (const auto& stmt : method->body->statements) {
                         compileStmt(stmt.get());
                     }

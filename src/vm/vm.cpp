@@ -85,24 +85,64 @@ bool VM::executeInstruction(CallFrame& frame, uint8_t instruction) {
             return true;
         case OP_GET_LOCAL: {
             uint8_t slot = frame.function->chunk.code[frame.ip++];
-            push(stack[frame.base + slot]);
+            Value val = stack[frame.base + slot];
+            if (std::holds_alternative<ReferenceObject*>(val)) {
+                ReferenceObject* ref = std::get<ReferenceObject*>(val);
+                if (ref->type == ReferenceObject::Type::LOCAL) {
+                    push(stack[ref->stackIndex]);
+                } else if (ref->type == ReferenceObject::Type::GLOBAL) {
+                    push(globals[ref->name]);
+                }
+            } else {
+                push(val);
+            }
             return true;
         }
         case OP_SET_LOCAL: {
             uint8_t slot = frame.function->chunk.code[frame.ip++];
-            stack[frame.base + slot] = stack.back();
+            Value& target = stack[frame.base + slot];
+            if (std::holds_alternative<ReferenceObject*>(target)) {
+                ReferenceObject* ref = std::get<ReferenceObject*>(target);
+                if (ref->type == ReferenceObject::Type::LOCAL) {
+                    stack[ref->stackIndex] = stack.back();
+                } else if (ref->type == ReferenceObject::Type::GLOBAL) {
+                    globals[ref->name] = stack.back();
+                }
+            } else {
+                target = stack.back();
+            }
             return true;
         }
         case OP_GET_GLOBAL: {
             uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
             std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
-            push(globals[name]);
+            Value val = globals[name];
+            if (std::holds_alternative<ReferenceObject*>(val)) {
+                ReferenceObject* ref = std::get<ReferenceObject*>(val);
+                if (ref->type == ReferenceObject::Type::LOCAL) {
+                    push(stack[ref->stackIndex]);
+                } else if (ref->type == ReferenceObject::Type::GLOBAL) {
+                    push(globals[ref->name]);
+                }
+            } else {
+                push(val);
+            }
             return true;
         }
         case OP_SET_GLOBAL: {
             uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
             std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
-            globals[name] = stack.back();
+            Value& target = globals[name];
+            if (std::holds_alternative<ReferenceObject*>(target)) {
+                ReferenceObject* ref = std::get<ReferenceObject*>(target);
+                if (ref->type == ReferenceObject::Type::LOCAL) {
+                    stack[ref->stackIndex] = stack.back();
+                } else if (ref->type == ReferenceObject::Type::GLOBAL) {
+                    globals[ref->name] = stack.back();
+                }
+            } else {
+                target = stack.back();
+            }
             return true;
         }
         case OP_POP:
@@ -202,6 +242,27 @@ bool VM::executeInstruction(CallFrame& frame, uint8_t instruction) {
             }
             
             push(matches);
+            return true;
+        }
+        case OP_DEEP_COPY: {
+            push(deepCopyIfNeeded(pop()));
+            return true;
+        }
+        case OP_MAKE_REF_LOCAL: {
+            uint8_t slot = frame.function->chunk.code[frame.ip++];
+            ReferenceObject* ref = new ReferenceObject();
+            ref->type = ReferenceObject::Type::LOCAL;
+            ref->stackIndex = frame.base + slot;
+            push(ref);
+            return true;
+        }
+        case OP_MAKE_REF_GLOBAL: {
+            uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+            std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+            ReferenceObject* ref = new ReferenceObject();
+            ref->type = ReferenceObject::Type::GLOBAL;
+            ref->name = name;
+            push(ref);
             return true;
         }
         case OP_THROW: {

@@ -24,6 +24,7 @@ public:
     int scopeDepth = 0;
     std::vector<LoopContext> loopStack;
     SourceLocation currentLocation{"", 0, 0};
+    std::unordered_map<std::string, std::vector<Param>> functionSignatures;
 
     FunctionObject* compile(ASTNode* node);
 

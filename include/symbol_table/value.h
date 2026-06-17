@@ -13,6 +13,12 @@ struct ObjectObject;
 struct ClassObject;
 struct InstanceObject;
 struct BoundMethod;
+struct Environment;
+
+struct EnvReference {
+    Environment* env;
+    std::string name;
+};
 
 
 using Value = std::variant<
@@ -30,6 +36,7 @@ using Value = std::variant<
     ClassObject*,
     InstanceObject*,
     BoundMethod*,
+    EnvReference*,
     std::string 
 >;
 

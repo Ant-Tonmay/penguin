@@ -166,8 +166,6 @@ Value Interpreter::callUserFunction(Function* fn, const std::vector<Value>& args
     Environment* fnEnv = new Environment(globals);
     for (size_t i = 0; i < fn->params.size(); ++i) {
         if (fn->params[i].isRef) {
-          
-            
             fnEnv->define(fn->params[i].name, args[i]);
         } else {
             fnEnv->define(fn->params[i].name, deepCopyIfNeeded(args[i]));

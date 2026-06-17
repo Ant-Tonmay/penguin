@@ -86,6 +86,17 @@ void Compiler::compileFunction(Function* func) {
         addLocal(param.name);
     }
 
+    for (size_t i = 0; i < func->params.size(); ++i) {
+        if (!func->params[i].isRef) {
+            emit(OP_GET_LOCAL);
+            emit(i + 1); // 0 is reserved for callee
+            emit(OP_DEEP_COPY);
+            emit(OP_SET_LOCAL);
+            emit(i + 1);
+            emit(OP_POP);
+        }
+    }
+
     for (const auto& stmt : func->body->statements) {
         compileStmt(stmt.get());
     }
@@ -103,6 +114,7 @@ void Compiler::compileFunction(Function* func) {
 FunctionObject* Compiler::compile(ASTNode* node) {
     if (auto* program = dynamic_cast<Program*>(node)) {
         for (const auto& func : program->functions) {
+            functionSignatures[func->name] = func->params;
             if (func->name != "main") {
                 compileFunction(func.get());
             }

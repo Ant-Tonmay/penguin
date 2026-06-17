@@ -183,8 +183,35 @@ void Compiler::compileExpr(ASTNode* node) {
         }
 
         compileExpr(call->callee.get());
-        for (const auto& arg : call->arguments) {
-            compileExpr(arg.get());
+
+        bool isKnownFunc = false;
+        std::vector<Param> knownParams;
+        if (auto* calleeName = dynamic_cast<VarExpr*>(call->callee.get())) {
+            if (functionSignatures.count(calleeName->name)) {
+                isKnownFunc = true;
+                knownParams = functionSignatures[calleeName->name];
+            }
+        }
+
+        for (size_t i = 0; i < call->arguments.size(); ++i) {
+            bool isRefArg = (isKnownFunc && i < knownParams.size()) ? knownParams[i].isRef : false;
+            if (isRefArg) {
+                if (auto* varExpr = dynamic_cast<VarExpr*>(call->arguments[i].get())) {
+                    int argSlot = resolveLocal(varExpr->name);
+                    if (argSlot != -1) {
+                        emit(OP_MAKE_REF_LOCAL);
+                        emit(argSlot);
+                    } else {
+                        int nameIdx = currentChunk().addConstant(varExpr->name);
+                        emit(OP_MAKE_REF_GLOBAL);
+                        emit(nameIdx);
+                    }
+                } else {
+                    throw std::runtime_error("Cannot pass non-variable by reference");
+                }
+            } else {
+                compileExpr(call->arguments[i].get());
+            }
         }
         emit(OP_CALL);
         emit(static_cast<uint8_t>(call->arguments.size()));

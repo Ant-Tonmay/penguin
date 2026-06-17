@@ -246,7 +246,25 @@ Value ExprEvaluator::visit(const CallExpr* expr, Environment* env) {
 
     if (auto var = dynamic_cast<const VarExpr*>(expr->callee.get())) {
          std::vector<Value> args;
-         for(auto& arg : expr->arguments) args.push_back(evaluate(arg.get(), env));
+         bool isKnownUserFunc = interpreter->userFunctions.count(var->name);
+         Function* userFunc = isKnownUserFunc ? interpreter->userFunctions[var->name] : nullptr;
+
+         for(size_t i = 0; i < expr->arguments.size(); ++i) {
+             bool isRefArg = false;
+             if (userFunc && i < userFunc->params.size()) {
+                 isRefArg = userFunc->params[i].isRef;
+             }
+             
+             if (isRefArg) {
+                 if (auto varExpr = dynamic_cast<const VarExpr*>(expr->arguments[i].get())) {
+                     args.push_back(env->getReference(varExpr->name));
+                 } else {
+                     throw std::runtime_error("Cannot pass non-variable by reference");
+                 }
+             } else {
+                 args.push_back(evaluate(expr->arguments[i].get(), env));
+             }
+         }
          return interpreter->callFunctionByName(var->name, args);
     }
 

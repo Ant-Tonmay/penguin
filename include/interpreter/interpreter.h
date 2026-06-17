@@ -27,10 +27,10 @@ public:
     Value callUserFunction(Function* fn, const std::vector<Value>& args);
 
     std::unordered_map<std::string, ClassObject*> classes;
+    std::unordered_map<std::string, Function*> userFunctions;
 
 private:
     Environment* globals { nullptr };
-    std::unordered_map<std::string, Function*> userFunctions;
     
     std::unique_ptr<ExprEvaluator> evaluator;
     std::unique_ptr<StmtExecutor> executor;

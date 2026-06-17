@@ -14,6 +14,7 @@ public:
     void define(const std::string& name, const Value& value);
     void assign(const std::string& name, const Value& value);
     Value get(const std::string& name);
+    EnvReference* getReference(const std::string& name);
     
     Environment* getParent() const { return parent; }
 

@@ -19,6 +19,7 @@ struct ObjectObject;
 struct ClassObject;
 struct InstanceObject;
 struct BoundMethod;
+struct ReferenceObject;
 
 
 using Value = std::variant<
@@ -34,6 +35,7 @@ using Value = std::variant<
     ClassObject*,
     InstanceObject*,
     BoundMethod*,
+    ReferenceObject*,
     std::string 
 >;
 
@@ -113,6 +115,13 @@ struct BoundMethod {
 
     BoundMethod(InstanceObject* instance, std::vector<FunctionObject*> methods)
         : instance(instance), methods(std::move(methods)) {}
+};
+
+struct ReferenceObject {
+    enum class Type { LOCAL, GLOBAL };
+    Type type;
+    int stackIndex;       // For LOCAL
+    std::string name;     // For GLOBAL
 };
 
 }

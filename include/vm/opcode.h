@@ -80,7 +80,10 @@ enum OpCode {
     OP_TRY_BEGIN,
     OP_TRY_END,
     OP_THROW,
-    OP_MATCH_TYPE
+    OP_MATCH_TYPE,
+    OP_DEEP_COPY,
+    OP_MAKE_REF_LOCAL,
+    OP_MAKE_REF_GLOBAL
 };
 
 }
