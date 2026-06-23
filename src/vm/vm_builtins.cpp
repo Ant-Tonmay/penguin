@@ -68,7 +68,7 @@ namespace vm
         klass->methods["toString"].push_back(toStr);
         klass->methodAccess["toString"] = AccessModifier::PUBLIC;
 
-        vm.globals[name] = klass;
+        vm.builtinsModule->globals[name] = klass;
         return klass;
     }
 

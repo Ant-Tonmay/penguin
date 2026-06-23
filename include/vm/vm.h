@@ -21,11 +21,19 @@ class VM {
 public:
     std::vector<Value> stack;
     std::vector<CallFrame> frames;
-    std::unordered_map<std::string, Value> globals;
+    // std::unordered_map<std::string, Value> globals;
     std::vector<ExceptionHandler> exceptionHandlers;
     Value currentException;
     bool hasPendingReturn = false;
     Value pendingReturnValue;
+
+
+    ModuleObject* builtinsModule = nullptr;
+
+    std::unordered_map<
+        std::string,
+        ModuleObject*
+    > loadedModules;
 
 
     void push(Value v);
@@ -48,6 +56,7 @@ private:
     bool handleInputOp(uint8_t instruction);
     void registerBuiltins();
     void throwPenguinException(const std::string& className, const std::string& message);
+    // ClassObject* resolveExceptionClass(const std::string& className);
 
 };
 

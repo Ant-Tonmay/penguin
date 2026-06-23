@@ -4,6 +4,7 @@
 
 #include <iostream>
 #include "exceptions/error.h"
+#include "interpreter/runtime_value.h"
 
 namespace vm
 {
@@ -32,8 +33,22 @@ namespace vm
     void VM::throwPenguinException(const std::string &className, const std::string &message)
     {
         // Look up the built-in class from globals
-        Value klassVal = globals.count(className) ? globals[className] : globals["RuntimeException"];
-        ClassObject *klass = std::get<ClassObject *>(klassVal);
+        
+        auto& globals = builtinsModule->globals;
+
+        auto it = globals.find(className);
+
+        if (it == globals.end())
+        {
+            throw RuntimeError(
+                "Unknown builtin exception: " +
+                className,
+                {}
+            );
+        }
+
+        ClassObject* klass =
+            std::get<ClassObject*>(it->second);
 
         // Create an instance and set .message
         InstanceObject *inst = new InstanceObject(klass);
@@ -83,7 +98,15 @@ namespace vm
     }
 
     void VM::run(FunctionObject *script)
-    {
+    {   
+
+         builtinsModule = new ModuleObject();
+        builtinsModule->name = "__builtins__";
+        if (!script->module) {
+            auto* mainModule = new ModuleObject();
+            mainModule->name = "main";
+            script->module = mainModule;
+        }
         registerBuiltins();
         frames.push_back({script, 0, 0});
 
@@ -161,7 +184,7 @@ namespace vm
                 }
                 else if (ref->type == ReferenceObject::Type::GLOBAL)
                 {
-                    push(globals[ref->name]);
+                    push(frame.function->module->globals[ref->name]);
                 }
             }
             else
@@ -183,7 +206,7 @@ namespace vm
                 }
                 else if (ref->type == ReferenceObject::Type::GLOBAL)
                 {
-                    globals[ref->name] = stack.back();
+                    frame.function->module->globals[ref->name] = stack.back();
                 }
             }
             else
@@ -196,7 +219,21 @@ namespace vm
         {
             uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
             std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
-            Value val = globals[name];
+            auto& globals = frame.function->module->globals;
+            auto it = globals.find(name);
+            Value val;
+            if (it != globals.end())
+            {
+                val = it->second;
+            }
+            else if (builtinsModule)
+            {
+                auto bit = builtinsModule->globals.find(name);
+                if (bit != builtinsModule->globals.end())
+                {
+                    val = bit->second;
+                }
+            }
             if (std::holds_alternative<ReferenceObject *>(val))
             {
                 ReferenceObject *ref = std::get<ReferenceObject *>(val);
@@ -219,6 +256,7 @@ namespace vm
         {
             uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
             std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
+            auto& globals = frame.function->module->globals;
             Value &target = globals[name];
             if (std::holds_alternative<ReferenceObject *>(target))
             {
@@ -232,8 +270,7 @@ namespace vm
                     globals[ref->name] = stack.back();
                 }
             }
-            else
-            {
+            else{
                 target = stack.back();
             }
             return true;
@@ -345,7 +382,8 @@ namespace vm
             else if (std::holds_alternative<std::string>(exc) && typeName == "String")
             {
                 matches = true;
-            }
+        auto& globals =
+    frame.function->module->globals;    }
             else if (std::holds_alternative<int64_t>(exc) && typeName == "Int")
             {
                 matches = true;

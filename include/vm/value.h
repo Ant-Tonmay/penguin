@@ -20,6 +20,7 @@ struct ClassObject;
 struct InstanceObject;
 struct BoundMethod;
 struct ReferenceObject;
+struct ModuleObject;
 
 
 using Value = std::variant<
@@ -98,12 +99,20 @@ struct ArrayObject {
     }
 };
 
+struct ModuleObject {
+    std::string name;
+
+    std::unordered_map<std::string, Value> globals;
+    std::unordered_map<std::string, Value> exports;
+};
+
 struct FunctionObject {
     std::string name;
     int arity;
     bool isMethod;
     ClassObject* ownerClass = nullptr;
     Chunk chunk;
+    ModuleObject* module = nullptr;
 
     FunctionObject(const std::string& name, int arity, bool isMethod = false)
         : name(name), arity(arity), isMethod(isMethod) {}
@@ -122,6 +131,8 @@ struct ReferenceObject {
     Type type;
     int stackIndex;       // For LOCAL
     std::string name;     // For GLOBAL
+
+    ModuleObject* module = nullptr;
 };
 
 }

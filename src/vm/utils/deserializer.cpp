@@ -20,25 +20,25 @@ bool Deserializer::deserialize(const std::string& filename, std::vector<Function
 
     uint32_t numFunctions = readPrimitive<uint32_t>(in);
     for (uint32_t i = 0; i < numFunctions; i++) {
-        outFunctions.push_back(readFunction(in));
+        outFunctions.push_back(readFunction(in, outFunctions));
     }
 
-    outMainScript = readFunction(in);
+    outMainScript = readFunction(in, outFunctions);
 
     return in.good();
 }
 
-FunctionObject* Deserializer::readFunction(std::ifstream& in) {
+FunctionObject* Deserializer::readFunction(std::ifstream& in, std::vector<FunctionObject*>& outFunctions) {
     std::string name = readString(in);
     int32_t arity = readPrimitive<int32_t>(in);
     bool isMethod = readPrimitive<uint8_t>(in) != 0;
 
     FunctionObject* func = new FunctionObject(name, arity, isMethod);
-    readChunk(in, func->chunk);
+    readChunk(in, func->chunk, outFunctions);
     return func;
 }
 
-void Deserializer::readChunk(std::ifstream& in, Chunk& chunk) {
+void Deserializer::readChunk(std::ifstream& in, Chunk& chunk, std::vector<FunctionObject*>& outFunctions) {
     uint32_t codeSize = readPrimitive<uint32_t>(in);
     chunk.code.resize(codeSize);
     if (codeSize > 0) {
@@ -48,7 +48,7 @@ void Deserializer::readChunk(std::ifstream& in, Chunk& chunk) {
     uint32_t constantsSize = readPrimitive<uint32_t>(in);
     chunk.constants.reserve(constantsSize);
     for (uint32_t i = 0; i < constantsSize; i++) {
-        chunk.constants.push_back(readValue(in));
+        chunk.constants.push_back(readValue(in, outFunctions));
     }
 
     uint32_t locationsSize = readPrimitive<uint32_t>(in);
@@ -61,7 +61,7 @@ void Deserializer::readChunk(std::ifstream& in, Chunk& chunk) {
     }
 }
 
-Value Deserializer::readValue(std::ifstream& in) {
+Value Deserializer::readValue(std::ifstream& in, std::vector<FunctionObject*>& outFunctions) {
     uint8_t tagByte = readPrimitive<uint8_t>(in);
     ValueTag tag = static_cast<ValueTag>(tagByte);
 
@@ -80,8 +80,11 @@ Value Deserializer::readValue(std::ifstream& in) {
             return readPrimitive<__int128>(in);
         case ValueTag::STRING:
             return readString(in);
-        case ValueTag::FUNCTION:
-            return readFunction(in);
+        case ValueTag::FUNCTION: {
+            FunctionObject* fn = readFunction(in, outFunctions);
+            outFunctions.push_back(fn);
+            return fn;
+        }
         default:
             std::cerr << "Error: unknown value tag in bytecode\n";
             return std::monostate{};

@@ -178,7 +178,7 @@ bool VM::handleTraitOp(CallFrame& frame, uint8_t instruction) {
                 }
             }
 
-            push(globals[name]);
+            push(frame.function->module->globals[name]);
             return true;
         }
 
@@ -204,7 +204,7 @@ bool VM::handleTraitOp(CallFrame& frame, uint8_t instruction) {
                 }
             }
 
-            globals[name] = value;
+            frame.function->module->globals[name] = value;
             push(value);
             return true;
         }

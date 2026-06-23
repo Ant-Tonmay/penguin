@@ -14,6 +14,7 @@ struct ClassObject;
 struct InstanceObject;
 struct BoundMethod;
 struct Environment;
+struct ModuleObject;
 
 struct EnvReference {
     Environment* env;
@@ -58,6 +59,7 @@ struct ArrayObject {
 };
 struct FunctionObject {
     Function* astNode; 
+    ModuleObject* module = nullptr;
 };
 struct BoundMethod {
     InstanceObject* instance;

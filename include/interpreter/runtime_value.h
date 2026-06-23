@@ -24,6 +24,13 @@ struct InstanceObject {
     InstanceObject(ClassObject* k) : klass(k) {}
 };
 
+struct ModuleObject {
+    std::string name;
+
+    std::unordered_map<std::string, Value> globals;
+    std::unordered_map<std::string, Value> exports;
+};
+
 
 
 

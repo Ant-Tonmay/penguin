@@ -78,16 +78,34 @@ int main(int argc, char* argv[]) {
     if (mode == Mode::RUN_FROM_FILE) {
         std::vector<vm::FunctionObject*> compiledFunctions;
         vm::FunctionObject* script = nullptr;
-        if (!vm::Deserializer::deserialize(filename, compiledFunctions, script)) {
+
+        if (!vm::Deserializer::deserialize(
+                filename,
+                compiledFunctions,
+                script))
+        {
             return 1;
         }
+
         vm::VM vmInstance;
-        // Register all compiled functions as globals
+        // VM::run will create a mainModule and assign it to script->module,
+        // then register builtins. We need to register compiled functions
+        // as globals AFTER that, so we pass them in via a pre-registration step.
+        // 
+        // But VM::run creates the module internally, so we must instead
+        // set up the module here and have VM::run reuse it.
+        auto* mainModule = new vm::ModuleObject();
+        mainModule->name = "main";
+        script->module = mainModule;
+
+        // Register all compiled functions on the module
         for (auto* fn : compiledFunctions) {
+            fn->module = mainModule;
             if (!fn->isMethod) {
-                vmInstance.globals[fn->name] = fn;
+               mainModule->globals[fn->name] = fn;
             }
         }
+
         try {
             vmInstance.run(script);
         } catch (const RuntimeError& e) {

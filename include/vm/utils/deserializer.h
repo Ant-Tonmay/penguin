@@ -11,9 +11,9 @@ public:
     static bool deserialize(const std::string& filename, std::vector<FunctionObject*>& outFunctions, FunctionObject*& outMainScript);
 
 private:
-    static FunctionObject* readFunction(std::ifstream& in);
-    static void readChunk(std::ifstream& in, Chunk& chunk);
-    static Value readValue(std::ifstream& in);
+    static FunctionObject* readFunction(std::ifstream& in, std::vector<FunctionObject*>& outFunctions);
+    static void readChunk(std::ifstream& in, Chunk& chunk, std::vector<FunctionObject*>& outFunctions);
+    static Value readValue(std::ifstream& in, std::vector<FunctionObject*>& outFunctions);
     static std::string readString(std::ifstream& in);
 
     template <typename T>
