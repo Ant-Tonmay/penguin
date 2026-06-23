@@ -397,6 +397,43 @@ namespace vm
         {
             currentException = pop();
 
+            if (!std::holds_alternative<InstanceObject*>(currentException))
+            {
+                throwPenguinException(
+                    "TypeError",
+                    "Cannot throw value '" +
+                    valueToString(currentException) +
+                    "'. Only exception objects can be thrown."
+                );
+                return true;
+            }
+
+            InstanceObject* instance =
+            std::get<InstanceObject*>(currentException);
+
+            // Must inherit from Exception.
+            bool isException = false;
+
+            for (ClassObject* klass = instance->klass;
+                klass != nullptr;
+                klass = klass->parent)
+            {
+                if (klass->name == "Exception")
+                {
+                    isException = true;
+                    break;
+                }
+            }
+
+            if (!isException)
+            {
+                throwPenguinException(
+                    "TypeError",
+                    "Only objects derived from Exception can be thrown."
+                );
+                return true;
+            }
+
             if (exceptionHandlers.empty())
             {
                 throwRuntimeError("Unhandled exception: " + valueToString(currentException));
