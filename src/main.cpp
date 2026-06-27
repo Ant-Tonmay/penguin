@@ -9,8 +9,10 @@
 #include "vm/vm.h"
 #include "vm/utils/serializer.h"
 #include "vm/utils/deserializer.h"
-
 #include "exceptions/error.h"
+#include "dependency_graph/dependency_graph.h"
+#include "dependency_graph/dependency_scanner.h"
+#include "utils/utils.h"
 
 static void printInfo() {
     std::cout << "Hello i am penguin , A brand new programming language !!\n";
@@ -52,11 +54,11 @@ int main(int argc, char* argv[]) {
     }
 
     enum class Mode {
-        INTERPRET,
+        UNKNOWN_MODE,
         COMPILE_TO_FILE,
         RUN_FROM_FILE
     };
-    Mode mode = Mode::INTERPRET;
+    Mode mode = Mode::UNKNOWN_MODE;
     std::string filename;
 
     if (arg1 == "-r") {
@@ -117,66 +119,46 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         return 0;
-    }
+    }else if (mode == Mode::COMPILE_TO_FILE) {
+        DependencyGraph graph;
+        try{
+            graph.build(filename);
+            auto buildOrder = graph.getBuildOrder();
+            for (const auto& file : buildOrder)
+            {
+                auto program =
+                    parseFile(file);
 
-    try {
-        std::ifstream file(filename);
+                vm::Compiler compiler;
 
-        if (!file)
-        {
-            std::cerr
-                << "Could not open source file: "
-                << filename
-                << "\n";
+                auto* script =
+                    compiler.compile(program.get());
 
+                vm::Serializer::serialize(
+                    changeExtension(file, ".pgc"),
+                    compiler.compiledFunctions,
+                    script
+                );
+            }
+        }
+        catch (const CompileError& e) {
+            std::cerr << "Compile time error at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
+            std::cerr << " | " << e.loc.line << "\n";
+            return 1;
+        } catch (const RuntimeError& e) {
+            std::cerr << "Runtime error at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
+            std::cerr << " | " << e.loc.line << "\n";
+            return 1;
+        } catch (const std::exception& e) {
+            std::cerr << "Runtime error: " << e.what() << "\n";
             return 1;
         }
-
-        std::stringstream buffer;
-        buffer << file.rdbuf();
-
-        std::string source =
-            buffer.str();
-
-        Lexer lexer(source);
-
-        auto tokens =
-            lexer.tokenize();
-
-        Parser parser(tokens);
-
-        auto program =
-            parser.parse();
-
-        // 4. Interpret / Compile
-        if (mode == Mode::COMPILE_TO_FILE) {
-             vm::Compiler compiler;
-             auto* script = compiler.compile(program.get());
-             std::string outFile = filename;
-             if (outFile.length() > 3 && outFile.substr(outFile.length() - 3) == ".pg") {
-                 outFile += "c";
-             } else {
-                 outFile += ".pgc";
-             }
-             if (vm::Serializer::serialize(outFile, compiler.compiledFunctions, script)) {
-                 std::cout << "Successfully compiled to " << outFile << "\n";
-             }
-        } else {
-             Interpreter interpreter;
-             interpreter.executeProgram(program.get());
-        }
-    } catch (const CompileError& e) {
-        std::cerr << "Compile time error at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
-        std::cerr << " | " << e.loc.line << "\n";
-        return 1;
-    } catch (const RuntimeError& e) {
-        std::cerr << "Runtime error at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
-        std::cerr << " | " << e.loc.line << "\n";
-        return 1;
-    } catch (const std::exception& e) {
-        std::cerr << "Runtime error: " << e.what() << "\n";
-        return 1;
+    }else{
+         std::cerr << "No specific options found . Use -r to run and -c to compile\n";
     }
 
-    return 0;  
+    return 0;
 }
+
+
+
