@@ -3,7 +3,9 @@
 
 std::string ModuleResolver::resolve(
     const std::string& currentFile,
-    const std::string& moduleName)
+    const std::string& moduleName,
+    const std::string& extentsion
+    )
 {
     namespace fs = std::filesystem;
 
@@ -33,7 +35,7 @@ std::string ModuleResolver::resolve(
     {
         fs::path candidate =
             currentDir /
-            (path + ".pg");
+            (path + extentsion);
 
         if (fs::exists(candidate))
         {

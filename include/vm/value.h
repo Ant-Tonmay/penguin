@@ -102,6 +102,7 @@ struct ArrayObject {
 
 struct ModuleObject {
     std::string name;
+    std::string filePath;
 
     std::unordered_map<std::string, Value> globals;
     std::unordered_map<std::string, Value> exports;

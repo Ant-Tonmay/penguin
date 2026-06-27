@@ -58,7 +58,7 @@ private:
     void throwPenguinException(const std::string& className, const std::string& message);
     // ClassObject* resolveExceptionClass(const std::string& className);
     
-    ModuleObject* loadModule(const std::string& moduleName);
+    ModuleObject* loadModule(const std::string& importerFile,const std::string& moduleName);
     void executeModule(FunctionObject* script);
 };
 

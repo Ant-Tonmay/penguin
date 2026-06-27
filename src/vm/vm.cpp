@@ -6,11 +6,16 @@
 #include <iostream>
 #include "exceptions/error.h"
 #include "interpreter/runtime_value.h"
+#include "loader/module_loader.h"
 
 namespace vm
 {   
     VM::VM()
     {
+        // frames.reserve(1024); // Added this lines for callframe failure debug
+        // stack.reserve(4096);
+
+
         builtinsModule = new ModuleObject();
         builtinsModule->name = "__builtins__";
 
@@ -142,8 +147,12 @@ namespace vm
     }
     
     ModuleObject* VM::loadModule(
+        const std::string& importerFile,
         const std::string& moduleName)
     {   
+
+        std::cout << "Importer file: " << importerFile << '\n';
+        std::cout << "Module name:   " << moduleName << '\n';
             
         auto it = loadedModules.find(moduleName);
 
@@ -158,8 +167,14 @@ namespace vm
         // Cache immediately for circular imports
         loadedModules[moduleName] = module;
 
-        std::string filename =
-            moduleName + ".pgc";
+        ModuleResolver resolver;
+
+
+        std::string filename =resolver.resolve(importerFile,moduleName,".pgc");
+        std::cout << "Resolved file: " << filename << '\n';
+        module->filePath = filename;
+
+        
 
         std::vector<FunctionObject*> compiledFunctions;
         FunctionObject* script = nullptr;
@@ -209,7 +224,14 @@ namespace vm
 
         // Execute module initialization
         executeModule(script);
+        std::cout << "Module initialized: " << module->name << '\n';
 
+        std::cout << "Exports:\n";
+
+        for (auto& [name, value] : module->exports)
+        {
+            std::cout << "  " << name << '\n';
+        }
         return module;
     }
 
@@ -231,7 +253,9 @@ namespace vm
     }
 
     bool VM::executeInstruction(CallFrame &frame, uint8_t instruction)
-    {
+    {   
+
+        //std::cout<< "Executing opcode "<< static_cast<int>(instruction)<< '\n';
         switch (instruction)
         {
         case OP_CONSTANT:
@@ -671,34 +695,49 @@ namespace vm
             uint8_t memberCount =
                 frame.function->chunk.code[frame.ip++];
 
-            ModuleObject* imported =
-                loadModule(moduleName);
+            // ── Cache frame-dependent data BEFORE loadModule ──────────────
+            // loadModule → executeModule → frames.push_back() can reallocate
+            // the frames vector, making the `frame` reference dangling.
+            // Everything we need from `frame` must be captured here.
+            ModuleObject* callerModule = frame.function->module;
+            std::string importerPath   = callerModule->filePath;
+
+            // Read all member-name operands from the bytecode now, while
+            // frame.ip / frame.function are still valid.
+            std::vector<std::string> memberNames;
+            memberNames.reserve(memberCount);
+            for (uint8_t i = 0; i < memberCount; i++)
+            {
+                uint8_t memberIdx =
+                    frame.function->chunk.code[frame.ip++];
+                memberNames.push_back(
+                    std::get<std::string>(
+                        frame.function->chunk.constants[memberIdx]));
+            }
+
+            ModuleObject* imported = loadModule(importerPath, moduleName);
+            // `frame` is potentially dangling past this point — do NOT use it.
 
             if (!imported)
             {
                 throwPenguinException(
                     "ImportError",
-                    "Cannot load module '" +
-                    moduleName + "'"
+                    "Cannot load module '" + moduleName + "'"
                 );
                 return true;
             }
-
-            auto& callerModule =
-                *frame.function->module;
 
             if (memberCount == 0)
             {
                 // Validate all exports first
                 for (auto& [name, val] : imported->exports)
                 {
-                    if (callerModule.globals.find(name) !=
-                        callerModule.globals.end())
+                    if (callerModule->globals.find(name) !=
+                        callerModule->globals.end())
                     {
                         throwPenguinException(
                             "NameError",
-                            "Global '" + name +
-                            "' already exists"
+                            "Global '" + name + "' already exists"
                         );
                         return true;
                     }
@@ -707,7 +746,7 @@ namespace vm
                 // Import all exports
                 for (auto& [name, val] : imported->exports)
                 {
-                    callerModule.globals[name] = val;
+                    callerModule->globals[name] = val;
                 }
             }
             else
@@ -715,52 +754,37 @@ namespace vm
                 std::vector<std::pair<std::string, Value>> imports;
 
                 // Validate everything first
-                for (uint8_t i = 0; i < memberCount; i++)
+                for (const auto& memberName : memberNames)
                 {
-                    uint8_t memberIdx =
-                        frame.function->chunk.code[frame.ip++];
-
-                    std::string memberName =
-                        std::get<std::string>(
-                            frame.function->chunk.constants[memberIdx]);
-
-                    auto it =
-                        imported->exports.find(memberName);
+                    auto it = imported->exports.find(memberName);
 
                     if (it == imported->exports.end())
                     {
                         throwPenguinException(
                             "NameError",
-                            "Module '" +
-                            moduleName +
-                            "' does not export '" +
-                            memberName + "'"
+                            "Module '" + moduleName +
+                            "' does not export '" + memberName + "'"
                         );
                         return true;
                     }
 
-                    if (callerModule.globals.find(memberName) !=
-                        callerModule.globals.end())
+                    if (callerModule->globals.find(memberName) !=
+                        callerModule->globals.end())
                     {
                         throwPenguinException(
                             "NameError",
-                            "Global '" +
-                            memberName +
-                            "' already exists"
+                            "Global '" + memberName + "' already exists"
                         );
                         return true;
                     }
 
-                    imports.push_back({
-                        memberName,
-                        it->second
-                    });
+                    imports.push_back({ memberName, it->second });
                 }
 
                 // Perform imports after validation
                 for (auto& [name, value] : imports)
                 {
-                    callerModule.globals[name] = value;
+                    callerModule->globals[name] = value;
                 }
             }
 
@@ -776,7 +800,7 @@ namespace vm
                     frame.function->chunk.constants[idx]);
 
             ModuleObject* module =
-                loadModule(moduleName);
+                loadModule(frame.function->module->filePath,moduleName);
 
             push(module);
 

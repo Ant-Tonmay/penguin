@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
         // set up the module here and have VM::run reuse it.
         auto* mainModule = new vm::ModuleObject();
         mainModule->name = "main";
+        mainModule->filePath = filename; 
         script->module = mainModule;
 
         // Register all compiled functions on the module

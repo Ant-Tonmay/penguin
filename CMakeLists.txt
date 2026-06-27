@@ -42,6 +42,9 @@ add_library(penguin_core
     src/vm/utils/serializer.cpp
     src/vm/utils/deserializer.cpp
     src/loader/module_loader.cpp
+    src/utils/utils.cpp
+    src/dependency_graph/dependency_graph.cpp
+    src/dependency_graph/dependency_scanner.cpp
 )
 
 target_include_directories(penguin_core

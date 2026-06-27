@@ -44,7 +44,9 @@ void DependencyGraph::dfs(
         std::string importPath =
             module_resolver->resolve(
                 filePath,
-                import);
+                import,
+                ".pg"
+            );
         
         resolvedImports.push_back(importPath);
         dfs(importPath, state);
