@@ -45,6 +45,10 @@ add_library(penguin_core
     src/utils/utils.cpp
     src/dependency_graph/dependency_graph.cpp
     src/dependency_graph/dependency_scanner.cpp
+    src/manifest/manifest.cpp
+    src/manifest/manifest_loader.cpp
+    src/manifest/manifest_parser.cpp
+
 )
 
 target_include_directories(penguin_core

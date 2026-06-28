@@ -8,43 +8,65 @@ std::string ModuleResolver::resolve(
     )
 {
     namespace fs = std::filesystem;
-    Manifest manifest = loader.load(currentFile);
 
+     std::string path = moduleName;
+        
+    std::replace(path.begin(),path.end(),'.',fs::path::preferred_separator);
 
-    std::string path = moduleName;
-    
-    std::replace(
-        path.begin(),
-        path.end(),
-        '.',
-        fs::path::preferred_separator
-    );
-
-    std::vector<fs::path> candidates ;
-    //while building
-    if (extension == ".pg")
-    {
-        candidates = {
-            manifest.sourceDir / (path + extension),
-            manifest.libraryDir / (path + extension)
-        };
-    }
-    else if (extension == ".pgc")
-    {   // while running
-        candidates = {
-            manifest.buildDir / (path + extension)
-        };
-    }
-    for (const auto& candidate : candidates)
-    {
-        if (fs::exists(candidate))
+    // if Manifest file exists look for manifest file 
+    if(loader.exists(currentFile)){
+        const Manifest& manifest = loader.load(currentFile);
+        std::vector<fs::path> candidates ;
+        //while building
+        if (extension == ".pg")
         {
-            return fs::canonical(candidate).string();
+            candidates = {
+                manifest.sourceDir / (path + extension),
+                manifest.libraryDir / (path + extension)
+            };
+        }
+        else if (extension == ".pgc")
+        {   // while running
+            candidates = {
+                manifest.buildDir / (path + extension)
+            };
+        }
+        else
+        {
+            throw std::runtime_error(
+                "Unsupported module extension: " + extension);
+        }
+        for (const auto& candidate : candidates)
+        {
+            if (fs::exists(candidate))
+            {
+                return fs::canonical(candidate).string();
+            }
+        }
+    }else{
+        fs::path currentDir =
+        fs::path(currentFile).parent_path();
+        while (true)
+        {
+            fs::path candidate =
+                currentDir /
+                (path + extension);
+
+            if (fs::exists(candidate))
+            {
+                return fs::canonical(candidate).string();
+            }
+
+            if (currentDir == currentDir.parent_path())
+            {
+                break;
+            }
+
+            currentDir =
+                currentDir.parent_path();
         }
     }
-    
 
-    
     throw std::runtime_error(
         "Cannot find module '" +
         moduleName + "'"

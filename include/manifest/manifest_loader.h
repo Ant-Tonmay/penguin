@@ -7,10 +7,9 @@
 class ManifestLoader
 {
 public:
-    Manifest load(
-        const std::filesystem::path& sourceFile);
-
-        ManifestLoader();
+    const Manifest& load(const std::filesystem::path& sourceFile);
+    ManifestLoader();
+    bool exists(const std::filesystem::path& startPath);
 
 private:
         std::unordered_map<std::filesystem::path,Manifest> cache;

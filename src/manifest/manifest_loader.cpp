@@ -40,7 +40,7 @@ std::filesystem::path ManifestLoader::findProjectRoot(
 }
 
 
-Manifest ManifestLoader::load(
+const Manifest& ManifestLoader::load(
     const std::filesystem::path& sourceFile)
 {
     std::filesystem::path projectRoot =
@@ -65,6 +65,38 @@ Manifest ManifestLoader::load(
     
     manifest.entry = manifest.sourceDir / manifest.entry;
 
-    cache[projectRoot] = manifest;
-    return manifest;
+    cache[projectRoot] = std::move(manifest);
+    return cache.at(projectRoot);
+}
+
+bool ManifestLoader::exists(
+    const std::filesystem::path& startPath)
+{
+    namespace fs = std::filesystem;
+
+    fs::path current;
+
+    if (fs::is_directory(startPath))
+    {
+        current = startPath;
+    }
+    else
+    {
+        current = startPath.parent_path();
+    }
+
+    while (true)
+    {
+        if (fs::exists(current / "krill.toml"))
+        {
+            return true;
+        }
+
+        if (current == current.parent_path())
+        {
+            return false;
+        }
+
+        current = current.parent_path();
+    }
 }
