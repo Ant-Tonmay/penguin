@@ -13,12 +13,12 @@
 #include "dependency_graph/dependency_graph.h"
 #include "dependency_graph/dependency_scanner.h"
 #include "utils/utils.h"
+#include "manifest/manifest_loader.h"
 
 static void printInfo() {
     std::cout << "Hello i am penguin , A brand new programming language !!\n";
     std::cout << "Version: 0.1.0\n";
-    std::cout << "Meet my creator Tonmay Sardar !!\n";
-    std::cout << "Usage: penguin <file.pg>\n";
+    std::cout << "Meet my creator , Tonmay!!\n";
 }
 
 static void printVersion() {
@@ -56,7 +56,9 @@ int main(int argc, char* argv[]) {
     enum class Mode {
         UNKNOWN_MODE,
         COMPILE_TO_FILE,
-        RUN_FROM_FILE
+        RUN_FROM_FILE,
+        BUILD_PROJECT,
+        RUN_PROJECT,
     };
     Mode mode = Mode::UNKNOWN_MODE;
     std::string filename;
@@ -75,6 +77,19 @@ int main(int argc, char* argv[]) {
             return 1;
         }
         filename = argv[2];
+    }else if (arg1 == "build")
+    {
+        mode = Mode::BUILD_PROJECT;
+
+        if (argc == 3)
+            filename = argv[2];
+    }
+    else if (arg1 == "run")
+    {
+        mode = Mode::RUN_PROJECT;
+
+        if (argc == 3)
+            filename = argv[2];
     }
 
     if (mode == Mode::RUN_FROM_FILE) {
@@ -127,14 +142,10 @@ int main(int argc, char* argv[]) {
             auto buildOrder = graph.getBuildOrder();
             for (const auto& file : buildOrder)
             {
-                auto program =
-                    parseFile(file);
-
+                auto program = parseFile(file);
                 vm::Compiler compiler;
 
-                auto* script =
-                    compiler.compile(program.get());
-
+                auto* script = compiler.compile(program.get());
                 vm::Serializer::serialize(
                     changeExtension(file, ".pgc"),
                     compiler.compiledFunctions,
@@ -154,7 +165,82 @@ int main(int argc, char* argv[]) {
             std::cerr << "Runtime error: " << e.what() << "\n";
             return 1;
         }
-    }else{
+    }else if(mode == Mode::BUILD_PROJECT){
+         DependencyGraph graph;
+         ManifestLoader loader;
+        try{
+            Manifest manifest = loader.load(std::filesystem::current_path());
+            graph.build(manifest.entry.string());
+            auto buildOrder = graph.getBuildOrder();
+            // std::cout << "Source: " << manifest.sourceDir << '\n';
+            // std::cout << "Library: " << manifest.libraryDir << '\n';
+            // std::cout << "Build: " << manifest.buildDir << '\n';
+            // std::cout << "Entry: " << manifest.entry << '\n';
+            for (const auto& file : buildOrder)
+            {
+                auto program = parseFile(file);
+                auto output = getBuildOutputPath(file, manifest);
+                vm::Compiler compiler;
+
+                auto* script = compiler.compile(program.get());
+                std::filesystem::create_directories(output.parent_path());
+                vm::Serializer::serialize(
+                    output.string(),
+                    compiler.compiledFunctions,
+                    script
+                );
+            }
+        }
+        catch (const CompileError& e) {
+            std::cerr << "Compile time error at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
+            std::cerr << " | " << e.loc.line << "\n";
+            return 1;
+        } catch (const RuntimeError& e) {
+            std::cerr << "Runtime error at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
+            std::cerr << " | " << e.loc.line << "\n";
+            return 1;
+        } catch (const std::exception& e) {
+            std::cerr << "Runtime error: " << e.what() << "\n";
+            return 1;
+        }
+    }else if(mode == Mode::RUN_PROJECT){
+        ManifestLoader loader;
+        Manifest manifest = loader.load(std::filesystem::current_path());
+
+        auto bytecode = getBuildOutputPath(manifest.entry.string(),manifest);
+        std::vector<vm::FunctionObject*> compiledFunctions;
+        vm::FunctionObject* script = nullptr;
+
+        if (!vm::Deserializer::deserialize(
+                bytecode.string(),
+                compiledFunctions,
+                script))
+        {
+            return 1;
+        }
+
+        vm::VM vmInstance;
+
+        auto* mainModule = new vm::ModuleObject();
+        mainModule->name = "main";
+        mainModule->filePath = bytecode.string();
+
+        script->module = mainModule;
+
+        for (auto* fn : compiledFunctions)
+        {
+            fn->module = mainModule;
+
+            if (!fn->isMethod)
+            {
+                mainModule->globals[fn->name] = fn;
+            }
+        }
+
+        vmInstance.run(script);
+    }
+    
+    else{
          std::cerr << "No specific options found . Use -r to run and -c to compile\n";
     }
 

@@ -23,30 +23,18 @@ void DependencyGraph::dfs(
 
     ModuleNode node =
         scanner->scan(filePath);
-    std::cout << "Scanning: "
-          << filePath
-          << "\n";
+    // std::cout << "Scanning: "
+    //       << filePath
+    //       << "\n";
      std::vector<std::string> resolvedImports;
    
 
     for (const auto& import : node.imports)
     {
-        std::cout << "  import: "
-              << import
-              << "\n";
+        //std::cout << "  import: " << import << "\n";
 
-            std::cout
-        << "Resolving "
-        << import
-        << " from "
-        << filePath
-        << "\n";
-        std::string importPath =
-            module_resolver->resolve(
-                filePath,
-                import,
-                ".pg"
-            );
+        //std::cout<< "Resolving " << import << " from " << filePath << "\n";
+        std::string importPath = module_resolver->resolve(filePath,import,".pg");
         
         resolvedImports.push_back(importPath);
         dfs(importPath, state);
@@ -112,7 +100,7 @@ std::vector<std::string> DependencyGraph::getBuildOrder(){
     }
 
 
-    __debug_print_dependency_order(order);
+    //__debug_print_dependency_order(order);
     return order;
 
 }

@@ -151,8 +151,8 @@ namespace vm
         const std::string& moduleName)
     {   
 
-        std::cout << "Importer file: " << importerFile << '\n';
-        std::cout << "Module name:   " << moduleName << '\n';
+        //std::cout << "Importer file: " << importerFile << '\n';
+       // std::cout << "Module name:   " << moduleName << '\n';
             
         auto it = loadedModules.find(moduleName);
 
@@ -171,7 +171,7 @@ namespace vm
 
 
         std::string filename =resolver.resolve(importerFile,moduleName,".pgc");
-        std::cout << "Resolved file: " << filename << '\n';
+        //std::cout << "Resolved file: " << filename << '\n';
         module->filePath = filename;
 
         
@@ -224,14 +224,14 @@ namespace vm
 
         // Execute module initialization
         executeModule(script);
-        std::cout << "Module initialized: " << module->name << '\n';
+        //std::cout << "Module initialized: " << module->name << '\n';
 
-        std::cout << "Exports:\n";
+        //std::cout << "Exports:\n";
 
-        for (auto& [name, value] : module->exports)
-        {
-            std::cout << "  " << name << '\n';
-        }
+        // for (auto& [name, value] : module->exports)
+        // {
+        //     std::cout << "  " << name << '\n';
+        // }
         return module;
     }
 

@@ -4,15 +4,15 @@
 std::string ModuleResolver::resolve(
     const std::string& currentFile,
     const std::string& moduleName,
-    const std::string& extentsion
+    const std::string& extension
     )
 {
     namespace fs = std::filesystem;
+    Manifest manifest = loader.load(currentFile);
+
 
     std::string path = moduleName;
-    fs::path currentDir =
-    fs::path(currentFile).parent_path();
-
+    
     std::replace(
         path.begin(),
         path.end(),
@@ -20,36 +20,29 @@ std::string ModuleResolver::resolve(
         fs::path::preferred_separator
     );
 
-    // fs::path dir =
-    //     fs::path(currentFile).parent_path();
-
-    // fs::path candidate =
-    //     dir / (path + ".pg");
-
-    // if (fs::exists(candidate))
-    // {
-    //     return fs::canonical(candidate).string();
-    // }
-
-    while (true)
+    std::vector<fs::path> candidates ;
+    //while building
+    if (extension == ".pg")
     {
-        fs::path candidate =
-            currentDir /
-            (path + extentsion);
-
+        candidates = {
+            manifest.sourceDir / (path + extension),
+            manifest.libraryDir / (path + extension)
+        };
+    }
+    else if (extension == ".pgc")
+    {   // while running
+        candidates = {
+            manifest.buildDir / (path + extension)
+        };
+    }
+    for (const auto& candidate : candidates)
+    {
         if (fs::exists(candidate))
         {
             return fs::canonical(candidate).string();
         }
-
-        if (currentDir == currentDir.parent_path())
-        {
-            break;
-        }
-
-        currentDir =
-            currentDir.parent_path();
     }
+    
 
     
     throw std::runtime_error(
