@@ -21,7 +21,7 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
             //     return true;
             // }
 
-            ArrayObject* arr = new ArrayObject();
+            ArrayObject* arr = allocate<ArrayObject>();
             arr->length = count;
             arr->capacity = count;
             arr->data = new Value[count];
@@ -88,7 +88,7 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
                 return true;
             }
 
-            ArrayObject* arr = new ArrayObject();
+            ArrayObject* arr = allocate<ArrayObject>();
             arr->isFixed = true;
             arr->length = size;
             arr->capacity = size;

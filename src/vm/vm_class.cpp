@@ -12,7 +12,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
         case OP_CLASS: {
             uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
             std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
-            ClassObject* klass = new ClassObject(name);
+            ClassObject* klass = allocate<ClassObject>(name);
             push(klass);
             return true;
         }
@@ -154,7 +154,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
                 }
 
                 std::vector<FunctionObject*> methods = instance->klass->methods[name];
-                BoundMethod* bound = new BoundMethod(instance, methods);
+                BoundMethod* bound = allocate<BoundMethod>(instance, methods);
                 push(bound);
                 return true;
             }

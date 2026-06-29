@@ -16,7 +16,7 @@ bool VM::handleCall(CallFrame& frame) {
             return true;
         }
 
-        InstanceObject* instance = new InstanceObject(klass);
+        InstanceObject* instance = allocate<InstanceObject>(klass);
 
         if (klass->methods.count(klass->name)) {
             auto& initMethods = klass->methods[klass->name];

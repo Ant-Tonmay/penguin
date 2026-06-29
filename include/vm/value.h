@@ -12,6 +12,24 @@
 
 namespace vm {
 
+enum class ObjType {
+    CLASS,
+    INSTANCE,
+    FUNCTION,
+    BOUND_METHOD,
+    ARRAY,
+    REFERENCE,
+    MODULE,
+    OBJECT
+};
+
+struct ObjHeader {
+    ObjType type;
+    ObjHeader* next = nullptr;
+
+    virtual ~ObjHeader() = default;
+};
+
 // Forward declarations
 struct FunctionObject;
 struct ArrayObject; 
@@ -64,11 +82,15 @@ struct Chunk {
     }
 };
 
-struct ObjectObject {
+struct ObjectObject : ObjHeader{
     std::unordered_map<std::string, Value> fields;
+
+    ObjectObject() {
+        type = ObjType::OBJECT;
+    }
 };
 
-struct ClassObject {
+struct ClassObject : ObjHeader {
     std::string name;
     bool isTrait = false;
     ClassObject* parent = nullptr;
@@ -77,38 +99,59 @@ struct ClassObject {
     std::unordered_map<std::string, AccessModifier> fields;
     std::unordered_map<std::string, Value> sharedFields;
     
-    ClassObject(const std::string& name) : name(name) {}
+    ClassObject(const std::string& name)
+        : name(name)
+    {
+        type = ObjType::CLASS;
+    }
 };
 
-struct InstanceObject {
+struct InstanceObject : ObjHeader {
     ClassObject* klass;
     std::unordered_map<std::string, Value> fields;
     
-    InstanceObject(ClassObject* klass) : klass(klass) {}
+     InstanceObject(ClassObject* klass)
+        : klass(klass)
+    {
+        type = ObjType::INSTANCE;
+    }
 };
 
-struct ArrayObject {
+struct ArrayObject : ObjHeader {
     bool isFixed;
     size_t length;
     size_t capacity;
     Value* data;    
     int refCount;    
 
-    ArrayObject() : isFixed(false), length(0), capacity(0), data(nullptr), refCount(0) {}
+    ArrayObject()
+        : isFixed(false),
+          length(0),
+          capacity(0),
+          data(nullptr),
+          refCount(0)
+    {
+        type = ObjType::ARRAY;
+    }
+
     ~ArrayObject() {
-         if (data) delete[] data;
+        delete[] data;
     }
 };
 
-struct ModuleObject {
+struct ModuleObject : ObjHeader {
     std::string name;
     std::string filePath;
 
     std::unordered_map<std::string, Value> globals;
     std::unordered_map<std::string, Value> exports;
+
+    ModuleObject() {
+        type = ObjType::MODULE;
+    }
 };
 
-struct FunctionObject {
+struct FunctionObject : ObjHeader {
     std::string name;
     int arity;
     bool isMethod;
@@ -117,24 +160,41 @@ struct FunctionObject {
     ModuleObject* module = nullptr;
 
     FunctionObject(const std::string& name, int arity, bool isMethod = false)
-        : name(name), arity(arity), isMethod(isMethod) {}
+        : name(name),
+          arity(arity),
+          isMethod(isMethod)
+    {
+        type = ObjType::FUNCTION;
+    }
 };
 
-struct BoundMethod {
+struct BoundMethod : ObjHeader {
     InstanceObject* instance;
     std::vector<FunctionObject*> methods;
 
-    BoundMethod(InstanceObject* instance, std::vector<FunctionObject*> methods)
-        : instance(instance), methods(std::move(methods)) {}
+    BoundMethod(
+        InstanceObject* instance,
+        std::vector<FunctionObject*> methods)
+        : instance(instance),
+          methods(std::move(methods))
+    {
+        type = ObjType::BOUND_METHOD;
+    }
 };
 
-struct ReferenceObject {
+struct ReferenceObject : ObjHeader{
     enum class Type { LOCAL, GLOBAL };
     Type type;
     int stackIndex;       // For LOCAL
     std::string name;     // For GLOBAL
 
     ModuleObject* module = nullptr;
+    ReferenceObject() {
+        this->type = Type::LOCAL;
+        ObjHeader::type = ObjType::REFERENCE;
+    }
 };
 
 }
+
+

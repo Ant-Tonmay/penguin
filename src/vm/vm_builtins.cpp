@@ -9,7 +9,7 @@ namespace vm
         const std::string &name,
         ClassObject *parent)
     {
-        ClassObject *klass = new ClassObject(name);
+        ClassObject *klass = vm.allocate<ClassObject>(name);
         klass->parent = parent;
 
         // Inherit parent's fields and methods (non-private)
@@ -37,7 +37,8 @@ namespace vm
         // This constructor is a native FunctionObject whose body just stores
         // the argument into instance->fields["message"].
         // We build it as a tiny bytecode chunk.
-        auto *ctor = new FunctionObject(name, 2, true); // arity=2 (this + msg)
+        //auto *ctor = new FunctionObject(name, 2, true); // arity=2 (this + msg)
+        auto *ctor = vm.allocate<FunctionObject>(name, 2, true); 
         // Bytecode: GET_LOCAL 1, SET_PROPERTY "message", POP, GET_LOCAL 0, RETURN
         Chunk &c = ctor->chunk;
         int msgIdx = c.addConstant(std::string("message"));
@@ -56,7 +57,7 @@ namespace vm
         klass->methodAccess[name] = AccessModifier::PUBLIC;
 
         // toString() method — returns this.message
-        auto *toStr = new FunctionObject("toString", 1, true); // arity=1 (this only)
+        auto *toStr = vm.allocate<FunctionObject>("toString", 1, true); // arity=1 (this only)
         Chunk &tc = toStr->chunk;
         int msgIdx2 = tc.addConstant(std::string("message"));
         tc.write(OP_GET_LOCAL);

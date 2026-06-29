@@ -16,12 +16,77 @@ namespace vm
         // stack.reserve(4096);
 
 
-        builtinsModule = new ModuleObject();
+        builtinsModule = allocate<ModuleObject>();
         builtinsModule->name = "__builtins__";
 
         registerBuiltins();
     }
 
+    VM::~VM()
+    {
+        ObjHeader* obj = objects;
+
+        while (obj)
+        {
+            ObjHeader* next = obj->next;
+
+            switch (obj->type)
+            {
+                case ObjType::CLASS:
+                    delete static_cast<ClassObject*>(obj);
+                    break;
+
+                case ObjType::INSTANCE:
+                    delete static_cast<InstanceObject*>(obj);
+                    break;
+
+                case ObjType::FUNCTION:
+                    delete static_cast<FunctionObject*>(obj);
+                    break;
+
+                case ObjType::BOUND_METHOD:
+                    delete static_cast<BoundMethod*>(obj);
+                    break;
+
+                case ObjType::ARRAY:
+                    delete static_cast<ArrayObject*>(obj);
+                    break;
+
+                case ObjType::REFERENCE:
+                    delete static_cast<ReferenceObject*>(obj);
+                    break;
+
+                case ObjType::MODULE:
+                    delete static_cast<ModuleObject*>(obj);
+                    break;
+
+                case ObjType::OBJECT:
+                    delete static_cast<ObjectObject*>(obj);
+                    break;
+            }
+
+            obj = next;
+        }
+    }
+
+    Value VM::deepCopyIfNeeded(const Value& value) {
+        if (!std::holds_alternative<ArrayObject*>(value)) {
+            return value;
+        }
+
+        ArrayObject* original = std::get<ArrayObject*>(value);
+        ArrayObject* copy = allocate<ArrayObject>();
+        copy->length = original->length;
+        copy->capacity = original->capacity;
+        copy->isFixed = original->isFixed;
+        copy->data = new Value[copy->capacity];
+        for (size_t i = 0; i < copy->length; ++i) {
+            copy->data[i] = deepCopyIfNeeded(original->data[i]);
+        }
+        return copy;
+    }
+
+    
     void VM::throwRuntimeError(const std::string &message)
     {
         if (frames.empty())
@@ -64,7 +129,7 @@ namespace vm
             std::get<ClassObject*>(it->second);
 
         // Create an instance and set .message
-        InstanceObject *inst = new InstanceObject(klass);
+        InstanceObject *inst = allocate<InstanceObject>(klass);
         inst->fields["message"] = message;
 
         // Put the source location in a .location field as a string
@@ -161,7 +226,7 @@ namespace vm
             return it->second;
         }
 
-        auto* module = new ModuleObject();
+        auto* module = allocate<ModuleObject>();
         module->name = moduleName;
 
         // Cache immediately for circular imports
@@ -526,7 +591,7 @@ namespace vm
         case OP_MAKE_REF_LOCAL:
         {
             uint8_t slot = frame.function->chunk.code[frame.ip++];
-            ReferenceObject *ref = new ReferenceObject();
+            ReferenceObject *ref = allocate<ReferenceObject>();
             ref->type = ReferenceObject::Type::LOCAL;
             ref->stackIndex = frame.base + slot;
             push(ref);
@@ -536,7 +601,7 @@ namespace vm
         {
             uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
             std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
-            ReferenceObject *ref = new ReferenceObject();
+            ReferenceObject *ref = allocate<ReferenceObject>();
             ref->type = ReferenceObject::Type::GLOBAL;
             ref->name = name;
             push(ref);

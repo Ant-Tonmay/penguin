@@ -1,5 +1,5 @@
 #include "vm/utils/value_utils.h"
-
+#include "vm/utils/value_utils.h"
 #include <type_traits>
 
 namespace vm {
@@ -88,21 +88,6 @@ std::string valueToString(const Value& value) {
     return "";
 }
 
-Value deepCopyIfNeeded(const Value& value) {
-    if (!std::holds_alternative<ArrayObject*>(value)) {
-        return value;
-    }
 
-    ArrayObject* original = std::get<ArrayObject*>(value);
-    ArrayObject* copy = new ArrayObject();
-    copy->length = original->length;
-    copy->capacity = original->capacity;
-    copy->isFixed = original->isFixed;
-    copy->data = new Value[copy->capacity];
-    for (size_t i = 0; i < copy->length; ++i) {
-        copy->data[i] = deepCopyIfNeeded(original->data[i]);
-    }
-    return copy;
-}
 
 }  // namespace vm

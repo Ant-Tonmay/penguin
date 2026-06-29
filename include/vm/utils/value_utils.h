@@ -11,6 +11,6 @@ double asDouble(const Value& value);
 int asInt(const Value& value);
 bool asBool(const Value& value);
 std::string valueToString(const Value& value);
-Value deepCopyIfNeeded(const Value& value);
+
 
 }  // namespace vm

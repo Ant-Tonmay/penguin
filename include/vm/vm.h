@@ -19,6 +19,17 @@ struct ExceptionHandler {
 
 class VM {
 public:
+
+    ObjHeader* objects = nullptr;
+
+    ~VM();
+
+    template<typename T, typename... Args>
+    T* allocate(Args&&... args);
+
+    template<typename T>
+    void trackObject(T* obj);
+
     std::vector<Value> stack;
     std::vector<CallFrame> frames;
     // std::unordered_map<std::string, Value> globals;
@@ -41,6 +52,7 @@ public:
 
     void run(FunctionObject* script);
     void throwRuntimeError(const std::string& message);
+    Value deepCopyIfNeeded(const Value& value);
 
 private:
     bool executeInstruction(CallFrame& frame, uint8_t instruction);
@@ -61,5 +73,20 @@ private:
     ModuleObject* loadModule(const std::string& importerFile,const std::string& moduleName);
     void executeModule(FunctionObject* script);
 };
+
+    template<typename T>
+    void VM::trackObject(T* obj)
+    {
+        obj->next = objects;
+        objects = obj;
+    }
+
+    template<typename T, typename... Args>
+    T* VM::allocate(Args&&... args)
+    {
+        T* obj = new T(std::forward<Args>(args)...);
+        trackObject(obj);
+        return obj;
+    }
 
 }
