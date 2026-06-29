@@ -25,8 +25,11 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             Value methodValue = pop();
             Value klassValue = stack.back();
             if (!std::holds_alternative<ClassObject*>(klassValue)) {
-                std::cerr << "Runtime error: OP_METHOD expects class on stack." << std::endl;
-                return false;
+                throwPenguinException(
+                    "TypeError",
+                    "Cannot define method '" + name + "': expected a class object but got '" + typeOf(klassValue) + "'."
+                );
+                return true;
             }
 
             ClassObject* klass = std::get<ClassObject*>(klassValue);
@@ -180,13 +183,13 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
                     push(value);
                     return true;
                 }
-                std::cerr << "Runtime error: Undefined shared property '" << name << "'." << std::endl;
-                return false;
+                throwPenguinException("NameError", "Class '" + klass->name + "' has no shared property '" + name + "'.");
+                return true;
             }
 
             if (!std::holds_alternative<InstanceObject*>(objectValue)) {
-                std::cerr << "Runtime error: OP_SET_PROPERTY expects an instance or class." << std::endl;
-                return false;
+                throwPenguinException("TypeError", "Cannot set property '" + name + "' on non-instance value.");
+                return true;
             }
 
             InstanceObject* instance = std::get<InstanceObject*>(objectValue);
@@ -201,8 +204,12 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             if (instance->klass->fields.count(name)) {
                 AccessModifier access = instance->klass->fields[name];
                 if (!checkAccess(instance->klass, contextClass, access)) {
-                    std::cerr << "Runtime error: Access denied to field '" << name << "'." << std::endl;
-                    return false;
+                    throwPenguinException(
+                        "RuntimeException",
+                        "Access denied to field '" + name + "': field is not accessible from this context."
+                    );
+
+                    return true;
                 }
             }
 
@@ -289,8 +296,8 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
         case OP_INHERIT: {
             Value superValue = pop();
             if (!std::holds_alternative<ClassObject*>(superValue)) {
-                std::cerr << "Runtime error: Superclass must be a class." << std::endl;
-                return false;
+                throwPenguinException("TypeError", "Superclass must be a class.");
+                return true;
             }
             ClassObject* superclass = std::get<ClassObject*>(superValue);
 

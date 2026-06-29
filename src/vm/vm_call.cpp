@@ -12,8 +12,8 @@ bool VM::handleCall(CallFrame& frame) {
         ClassObject* klass = std::get<ClassObject*>(calleeValue);
         
         if (klass->isTrait) {
-            std::cerr << "Runtime error: Cannot instantiate trait '" << klass->name << "' directly." << std::endl;
-            return false;
+            throwPenguinException("TypeError", "Cannot instantiate trait '" + klass->name + "' directly.");
+            return true;
         }
 
         InstanceObject* instance = new InstanceObject(klass);
@@ -35,15 +35,13 @@ bool VM::handleCall(CallFrame& frame) {
                 return true;
             }
 
-            std::cerr << "Runtime error: no matching constructor for "
-                      << static_cast<int>(argCount) << " arguments." << std::endl;
-            return false;
+            throwPenguinException("TypeError", "No matching constructor for class '" + klass->name + "' with " + std::to_string(argCount) + " arguments.");
+            return true;
         }
 
         if (argCount != 0) {
-            std::cerr << "Runtime error: expected 0 arguments for default constructor but got "
-                      << static_cast<int>(argCount) << std::endl;
-            return false;
+            throwPenguinException("TypeError", "Expected 0 arguments for default constructor of '" + klass->name + "' but got " + std::to_string(argCount) + ".");
+            return true;
         }
 
         for (int i = 0; i < argCount; i++) pop();
@@ -65,8 +63,8 @@ bool VM::handleCall(CallFrame& frame) {
         }
 
         if (!matchingMethod) {
-            std::cerr << "Runtime error: expected method arguments did not match any overloaded method." << std::endl;
-            return false;
+            throwPenguinException("TypeError", "No matching overload for bound method with " + std::to_string(argCount) + " arguments.");
+            return true;
         }
 
         size_t base = stack.size() - argCount - 1;
@@ -75,16 +73,14 @@ bool VM::handleCall(CallFrame& frame) {
     }
 
     if (!std::holds_alternative<FunctionObject*>(calleeValue)) {
-        std::cerr << "Runtime error: tried to call a non-function" << std::endl;
-        return false;
+        throwPenguinException("TypeError", "Tried to call a non-function value.");
+        return true;
     }
 
     FunctionObject* callee = std::get<FunctionObject*>(calleeValue);
     if (argCount != callee->arity) {
-        std::cerr << "Runtime error: in function " << callee->name
-                  << " expected " << callee->arity << " arguments but got "
-                  << static_cast<int>(argCount) << std::endl;
-        return false;
+        throwPenguinException("TypeError", "Function '" + callee->name + "' expected " + std::to_string(callee->arity) + " arguments but got " + std::to_string(argCount) + ".");
+        return true;
     }
 
     size_t base = stack.size() - argCount - 1;

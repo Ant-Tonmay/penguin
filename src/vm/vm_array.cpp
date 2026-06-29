@@ -36,15 +36,15 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
             Value idxValue = pop();
             Value arrValue = pop();
             if (!std::holds_alternative<ArrayObject*>(arrValue)) {
-                std::cerr << "Runtime error: index operation expects an array." << std::endl;
-                return false;
+                throwPenguinException("TypeError", "Index operation expects an array, got '" + typeOf(arrValue) + "'.");
+                return true;
             }
             ArrayObject* arr = std::get<ArrayObject*>(arrValue);
             int idx = asInt(idxValue);
             if (idx < 0 || static_cast<size_t>(idx) >= arr->length) {
                 throwPenguinException("IndexOutOfBoundsException",
                                      "array index " + std::to_string(idx) + " out of bounds (length " + std::to_string(arr->length) + ").");
-                return false;
+                return true;
             }
             push(arr->data[idx]);
             return true;
@@ -55,15 +55,15 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
             Value idxValue = pop();
             Value arrValue = pop();
             if (!std::holds_alternative<ArrayObject*>(arrValue)) {
-                std::cerr << "Runtime error: index operation expects an array." << std::endl;
-                return false;
+                throwPenguinException("TypeError", "Index operation expects an array, got '" + typeOf(arrValue) + "'.");
+                return true;
             }
             ArrayObject* arr = std::get<ArrayObject*>(arrValue);
             int idx = asInt(idxValue);
             if (idx < 0 || static_cast<size_t>(idx) >= arr->length) {
                 throwPenguinException("IndexOutOfBoundsException",
                                      "array index " + std::to_string(idx) + " out of bounds (length " + std::to_string(arr->length) + ").");
-                return false;
+                return true;
             }
             arr->data[idx] = value;
             return true;
@@ -84,8 +84,8 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
 
             int size = asInt(pop());
             if (size < 0) {
-                std::cerr << "Runtime error: fixed() size cannot be negative." << std::endl;
-                return false;
+                throwPenguinException("ValueError", "shape() size cannot be negative.");
+                return true;
             }
 
             ArrayObject* arr = new ArrayObject();
@@ -104,14 +104,14 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
             Value value = pop();
             Value arrValue = pop();
             if (!std::holds_alternative<ArrayObject*>(arrValue)) {
-                std::cerr << "Runtime error: push expects an array." << std::endl;
-                return false;
+                throwPenguinException("TypeError", "push() expects an array as first argument.");
+                return true;
             }
 
             ArrayObject* arr = std::get<ArrayObject*>(arrValue);
             if (arr->isFixed) {
-                std::cerr << "Runtime error: Cannot push to fixed array." << std::endl;
-                return false;
+                throwPenguinException("TypeError", "Cannot push to a fixed-size array.");
+                return true;
             }
 
             if (arr->length == arr->capacity) {
@@ -133,8 +133,8 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
         case OP_ARRAY_LENGTH: {
             Value arrValue = pop();
             if (!std::holds_alternative<ArrayObject*>(arrValue)) {
-                std::cerr << "Runtime error: length() expects an array." << std::endl;
-                return false;
+                throwPenguinException("TypeError", "length() expects an array argument.");
+                return true;
             }
             ArrayObject* arr = std::get<ArrayObject*>(arrValue);
             push(static_cast<double>(arr->length));
