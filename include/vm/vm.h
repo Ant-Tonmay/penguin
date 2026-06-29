@@ -50,7 +50,7 @@ public:
     void push(Value v);
     Value pop();
 
-    void run(FunctionObject* script);
+    void run(FunctionObject* script,const std::vector<FunctionObject*>& compiledFunctions);
     void throwRuntimeError(const std::string& message);
     Value deepCopyIfNeeded(const Value& value);
 
@@ -77,6 +77,12 @@ private:
     template<typename T>
     void VM::trackObject(T* obj)
     {
+        if (!obj) return;
+
+        // already tracked?
+        if (obj->next != nullptr || objects == obj)
+            return;
+
         obj->next = objects;
         objects = obj;
     }

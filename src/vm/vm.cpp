@@ -312,8 +312,13 @@ namespace vm
         return value;
     }
 
-    void VM::run(FunctionObject *script)
-    {   
+    void VM::run(FunctionObject *script,const std::vector<FunctionObject*>& compiledFunctions)
+    {    
+        trackObject(script);
+        for (auto* fn : compiledFunctions)
+        {
+            trackObject(fn);
+        }
         executeModule(script);  
     }
 

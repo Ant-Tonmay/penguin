@@ -111,7 +111,7 @@ int main(int argc, char* argv[]) {
         // 
         // But VM::run creates the module internally, so we must instead
         // set up the module here and have VM::run reuse it.
-        auto* mainModule = new vm::ModuleObject();
+        auto* mainModule = vmInstance.allocate<vm::ModuleObject>();
         mainModule->name = "main";
         mainModule->filePath = filename; 
         script->module = mainModule;
@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
         }
 
         try {
-            vmInstance.run(script);
+            vmInstance.run(script, compiledFunctions);
         } catch (const RuntimeError& e) {
             std::cerr << "RuntimeError at line " << e.loc.line_num << ", col " << e.loc.col_num << ": " << e.message << "\n";
             std::cerr << " | " << e.loc.line << "\n";
@@ -221,7 +221,7 @@ int main(int argc, char* argv[]) {
 
         vm::VM vmInstance;
 
-        auto* mainModule = new vm::ModuleObject();
+        auto* mainModule = vmInstance.allocate<vm::ModuleObject>();
         mainModule->name = "main";
         mainModule->filePath = bytecode.string();
 
@@ -237,7 +237,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        vmInstance.run(script);
+        vmInstance.run(script, compiledFunctions);
     }
     
     else{
