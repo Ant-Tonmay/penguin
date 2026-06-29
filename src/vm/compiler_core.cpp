@@ -137,6 +137,13 @@ FunctionObject* Compiler::compile(ASTNode* node) {
         }
 
         for (const auto& alias : program->aliases) {
+
+            // std::cout << "Compiling alias: "
+            //   << alias->name
+            //   << " -> "
+            //   << alias->include->name
+            //   << '\n';
+
             compileStmt(alias.get());
         }
 

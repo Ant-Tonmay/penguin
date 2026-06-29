@@ -50,24 +50,41 @@ ModuleNode DependencyScanner::scan(
     auto program =
         parser.parse();
 
-    std::unordered_set<std::string> deps;
+    std::vector<std::string> deps;
+    std::unordered_set<std::string> seen;
+
+    auto addDependency = [&](const std::string& name)
+    {
+        if (seen.insert(name).second)
+        {
+            deps.push_back(name);
+        }
+    };
 
     // include math;
     // include <add> from math;
-    for (const auto &inc : program->includes)
-    {
-        deps.insert(inc->name);
-    }
-
     // alias m = include math;
-    for (const auto &alias : program->aliases)
+
+    for (Stmt* stmt : program->statements)
     {
-        if (alias->include)
+        if (auto* inc = dynamic_cast<IncludeStmt*>(stmt))
         {
-            deps.insert(
-                alias->include->name);
+            addDependency(inc->name);
+        }
+        else if (auto* alias = dynamic_cast<AliasStmt*>(stmt))
+        {
+            if (alias->include)
+            {
+                addDependency(alias->include->name);
+            }
         }
     }
+    
+
+    // for (const auto& dep : deps)
+    // {
+    //     std::cout << dep << '\n';
+    // }
 
     node.imports.assign(
         deps.begin(),

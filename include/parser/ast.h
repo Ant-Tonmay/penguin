@@ -387,6 +387,8 @@ struct ExportStmt : ASTNode {
 
 
 struct Program : ASTNode {
+    
+    std::vector<Stmt*> statements;
     std::vector<std::unique_ptr<IncludeStmt>> includes;
     std::vector<std::unique_ptr<AliasStmt>> aliases;
     std::vector<std::unique_ptr<Function>> functions;

@@ -20,10 +20,14 @@ std::unique_ptr<Program> Parser::parse() {
     consume(TokenType::LBRACE, "Expect '{' at start of program.");
     while(!check(TokenType::RBRACE) && !isAtEnd()){
         if(check(TokenType::KEYWORD) && peek().lexeme == "include"){
-            program->includes.push_back(parseIncludeStmt());
+            auto includeStmt = parseIncludeStmt();
+            program->statements.push_back(includeStmt.get());
+            program->includes.push_back(std::move(includeStmt));
         }
         else if(check(TokenType::KEYWORD) && peek().lexeme == "alias"){
-            program->aliases.push_back(parseAliasStmt());
+            auto aliasStmt = parseAliasStmt();
+            program->statements.push_back(aliasStmt.get());
+            program->aliases.push_back(std::move(aliasStmt));
         }
         else{
             break;
