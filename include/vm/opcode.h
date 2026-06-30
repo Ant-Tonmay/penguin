@@ -88,6 +88,7 @@ enum OpCode {
     OP_RESTORE_RETURN, // Restores the saved return value and executes OP_RETURN
     OP_EXPORT,
     OP_INCLUDE,
+    OP_SUPER,
 
 };
 

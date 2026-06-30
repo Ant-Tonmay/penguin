@@ -22,6 +22,12 @@ struct FinallyContext {
     std::vector<int>* pendingJumps;   // Pointer to the jumpsToFinally vector owned by compileTryCatchStmt
 };
 
+struct ClassCompiler {
+    std::string className;
+    std::string parentName;
+    ClassCompiler* enclosing = nullptr;
+};
+
 class Compiler {
 public:
     FunctionObject* currentFunction;              // function being compiled right now
@@ -35,6 +41,7 @@ public:
     FunctionObject* compile(ASTNode* node);
 
 private:
+    ClassCompiler* currentClass = nullptr;
     Chunk& currentChunk();
 
     void emit(uint8_t byte);

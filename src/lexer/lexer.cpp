@@ -164,7 +164,7 @@ void Lexer::identifier() {
         {"catch",TokenType::KEYWORD},
         {"finally",TokenType::KEYWORD},
         {"throw",TokenType::KEYWORD},
-        
+        {"super",TokenType::KEYWORD},
     };
 
     if (keywords.count(value)) {

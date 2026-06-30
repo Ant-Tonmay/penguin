@@ -2,6 +2,7 @@
 
 #include "lexer/lexer.h"
 #include "parser/parser.h"
+#include "exceptions/error.h"
 
 namespace vm {
 
@@ -285,6 +286,38 @@ void Compiler::compileExpr(ASTNode* node) {
         int nameIdx = currentChunk().addConstant(mem->name);
         emit(OP_GET_PROPERTY);
         emit(nameIdx);
+    }else if (auto* superExpr = dynamic_cast<SuperExpr*>(node)) {
+
+        if (currentClass == nullptr) {
+            throw CompileError(
+                "'super' may only be used inside a class.",
+                currentLocation
+            );
+        }
+
+        if (currentClass->parentName.empty()) {
+            throw CompileError(
+                "Cannot use 'super' in a class with no superclass.",
+                currentLocation
+            );
+        }
+
+        int thisSlot = resolveLocal("this");
+
+        if (thisSlot == -1) {
+            throw CompileError(
+                "'super' may only be used inside instance methods.",
+                currentLocation
+            );
+        }
+
+        emit(OP_GET_LOCAL);
+        emit(thisSlot);
+
+        int idx = currentChunk().addConstant(superExpr->member);
+
+        emit(OP_SUPER);
+        emit(idx);
     }
 }
 

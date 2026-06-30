@@ -500,6 +500,16 @@ std::unique_ptr<Expr> Parser::parsePrimary() {
         if (previous().lexeme == "false") {
             return make_node<BoolExpr>(previous().location, false);
         }
+        if (previous().lexeme == "super") {
+
+            consume(TokenType::DOT, "Expected '.' after 'super'.");
+
+            Token member =
+                consume(TokenType::IDENTIFIER,
+                        "Expected superclass member name.");
+
+            return std::make_unique<SuperExpr>(member.lexeme);
+        }
     }
 
     if (match(TokenType::IDENTIFIER)) {

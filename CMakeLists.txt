@@ -37,6 +37,7 @@ add_library(penguin_core
     src/vm/vm_ops.cpp
     src/vm/vm_trait.cpp
     src/vm/vm_builtins.cpp
+    src/vm/vm_helper.cpp
     src/vm/utils/access_utils.cpp
     src/vm/utils/value_utils.cpp
     src/vm/utils/serializer.cpp

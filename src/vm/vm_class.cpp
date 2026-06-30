@@ -111,63 +111,11 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             InstanceObject* instance = std::get<InstanceObject*>(objectValue);
             ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
 
-             // Shared field access through instance
-            auto sharedIt = instance->klass->sharedFields.find(name);
-            if (sharedIt != instance->klass->sharedFields.end())
-            {
-                push(sharedIt->second);
-                return true;
-            }
-            // Normal field access
-            if (instance->fields.count(name) || instance->klass->fields.count(name)) {
-                AccessModifier access = AccessModifier::PUBLIC;
-                if (instance->klass->fields.count(name)) {
-                    access = instance->klass->fields[name];
-                }
-                if (!checkAccess(instance->klass, contextClass, access)) {
-                    throwPenguinException(
-                        "RuntimeException",
-                        "Access denied to field '" +
-                        name +
-                        "'."
-                    );
-                    return true;
-                }
-                if (instance->fields.count(name)) {
-                    push(instance->fields[name]);
-                } else {
-                    push(std::monostate{});
-                }
-                return true;
-            }
-            // Method access
-            if (instance->klass->methods.count(name)) {
-                AccessModifier access = instance->klass->methodAccess[name];
-                if (!checkAccess(instance->klass, contextClass, access)) {
-                    throwPenguinException(
-                        "RuntimeException",
-                        "Access denied to method '" +
-                        name +
-                        "'."
-                    );
-                    return true;
-                }
-
-                std::vector<FunctionObject*> methods = instance->klass->methods[name];
-                BoundMethod* bound = allocate<BoundMethod>(instance, methods);
-                push(bound);
-                return true;
-            }
-
-            
-            throwPenguinException(
-                "NameError",
-                "Undefined property '" +
-                name +
-                "'."
-            );
-
-            return true;
+            return lookupMember(
+                instance,
+                instance->klass,
+                contextClass,
+                name);
         }
 
         case OP_SET_PROPERTY: {
@@ -309,18 +257,34 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
                 if (superclass->methodAccess[methodPair.first] == AccessModifier::PRIVATE) {
                     continue;
                 }
-                subclass->methods[methodPair.first] = methodPair.second;
+                auto& overloads = subclass->methods[methodPair.first];
+                for (FunctionObject* fn : methodPair.second) {
+                    bool exists = false;
+
+                    for (FunctionObject* existing : overloads) {
+                        if (existing->arity == fn->arity) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists)
+                        overloads.push_back(fn);
+                }
                 subclass->methodAccess[methodPair.first] = superclass->methodAccess[methodPair.first];
             }
             for (const auto& fieldPair : superclass->fields) {
                 if (fieldPair.second == AccessModifier::PRIVATE) {
                     continue;
                 }
-                subclass->fields[fieldPair.first] = fieldPair.second;
+                if (!subclass->fields.count(fieldPair.first)) {
+                    subclass->fields.emplace(fieldPair.first, fieldPair.second);
+                }
             }
             // Copy shared fields as well
             for (const auto& sharedPair : superclass->sharedFields) {
-                subclass->sharedFields[sharedPair.first] = sharedPair.second;
+                if (!subclass->sharedFields.count(sharedPair.first)) {
+                    subclass->sharedFields.emplace(sharedPair.first, sharedPair.second);
+                }
             }
             return true;
         }

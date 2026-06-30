@@ -2,7 +2,6 @@
 
 #include "vm/utils/value_utils.h"
 #include "vm/utils/deserializer.h"
-
 #include <iostream>
 #include "exceptions/error.h"
 #include "interpreter/runtime_value.h"
@@ -68,6 +67,8 @@ namespace vm
             obj = next;
         }
     }
+
+        
 
     Value VM::deepCopyIfNeeded(const Value& value) {
         if (!std::holds_alternative<ArrayObject*>(value)) {
@@ -876,8 +877,44 @@ namespace vm
 
             return true;
         }
+        case OP_SUPER:
+        {
+            uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
+
+            std::string name =
+                std::get<std::string>(
+                    frame.function->chunk.constants[nameIdx]);
+
+            Value receiverValue = pop();
+
+            if (!std::holds_alternative<InstanceObject*>(receiverValue)) {
+
+                throwPenguinException(
+                    "TypeError",
+                    "Invalid receiver for super.");
+                return true;
+            }
+            InstanceObject* receiver = std::get<InstanceObject*>(receiverValue);
+            ClassObject* owner = frame.function->ownerClass;
+
+            if (owner == nullptr || owner->parent == nullptr)
+            {
+                throwPenguinException(
+                    "RuntimeException",
+                    "Current class has no superclass.");
+
+                return true;
+            }
+            ClassObject* superClass = owner->parent;
+
+            return lookupMember(
+                receiver,
+                superClass,
+                frame.function->ownerClass,
+                name);
 
 
+        }
         case OP_HALT:
             return false;
 

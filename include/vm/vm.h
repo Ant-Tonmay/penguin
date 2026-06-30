@@ -72,6 +72,8 @@ private:
     
     ModuleObject* loadModule(const std::string& importerFile,const std::string& moduleName);
     void executeModule(FunctionObject* script);
+
+    bool lookupMember(InstanceObject* receiver,ClassObject* lookupClass,ClassObject* contextClass,const std::string& name);
 };
 
     template<typename T>

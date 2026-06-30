@@ -273,6 +273,13 @@ void Compiler::compileStmt(ASTNode* node) {
         compileExpr(node);
         emit(OP_POP);
     } else if (auto* classStmt = dynamic_cast<ClassStmt*>(node)) {
+        ClassCompiler classCompiler;
+
+        classCompiler.className = classStmt->name;
+        classCompiler.parentName = classStmt->parentName;
+        classCompiler.enclosing = currentClass;
+
+        currentClass = &classCompiler;
         int nameIdx = currentChunk().addConstant(classStmt->name);
         emit(OP_CLASS);
         emit(nameIdx);
@@ -415,6 +422,7 @@ void Compiler::compileStmt(ASTNode* node) {
                 }
             }
         }
+        currentClass = currentClass->enclosing;
 
         emit(OP_POP);
     } else if (auto* traitStmt = dynamic_cast<TraitStmt*>(node)) {

@@ -396,3 +396,11 @@ struct Program : ASTNode {
     std::vector<std::unique_ptr<TraitStmt>> traits;
     std::vector<std::unique_ptr<ExportStmt>> exports;
 };
+
+
+struct SuperExpr : Expr {
+    std::string member;
+
+    explicit SuperExpr(std::string member)
+        : member(std::move(member)) {}
+};
