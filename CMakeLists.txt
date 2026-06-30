@@ -77,36 +77,36 @@ target_link_libraries(penguin PRIVATE penguin_core)
 # -----------------------------
 enable_testing()
 
-add_executable(penguin_lexer_test src/test_lexer.cpp)
+add_executable(penguin_lexer_test tests/test_lexer.cpp)
 target_link_libraries(penguin_lexer_test PRIVATE penguin_core)
 add_test(NAME LexerTest COMMAND penguin_lexer_test)
 
-add_executable(penguin_parser_test src/test_parser.cpp)
+add_executable(penguin_parser_test tests/test_parser.cpp)
 target_link_libraries(penguin_parser_test PRIVATE penguin_core)
 add_test(NAME ParserTest COMMAND penguin_parser_test)
 
-add_executable(penguin_symbol_table_test src/test_symbol_table.cpp)
+add_executable(penguin_symbol_table_test tests/test_symbol_table.cpp)
 target_link_libraries(penguin_symbol_table_test PRIVATE penguin_core)
 add_test(NAME SymbolTableTest COMMAND penguin_symbol_table_test)
 
-add_executable(penguin_interpreter_test src/test_interpreter.cpp)
+add_executable(penguin_interpreter_test tests/test_interpreter.cpp)
 target_link_libraries(penguin_interpreter_test PRIVATE penguin_core)
 add_test(NAME InterpreterTest COMMAND penguin_interpreter_test ${PROJECT_SOURCE_DIR}/examples/operators.pg)
 
 
-add_executable(penguin_parser_array_test src/test_parser_arrays.cpp)
+add_executable(penguin_parser_array_test tests/test_parser_arrays.cpp)
 target_link_libraries(penguin_parser_array_test PRIVATE penguin_core)
 add_test(NAME ParserArrayTest COMMAND penguin_parser_array_test)
 
-add_executable(penguin_parser_function_test src/test_parser_functions.cpp)
+add_executable(penguin_parser_function_test tests/test_parser_functions.cpp)
 target_link_libraries(penguin_parser_function_test PRIVATE penguin_core)
 add_test(NAME ParserFunctionTest COMMAND penguin_parser_function_test)
 
-add_executable(penguin_parser_loops_test src/test_parser_loops.cpp)
+add_executable(penguin_parser_loops_test tests/test_parser_loops.cpp)
 target_link_libraries(penguin_parser_loops_test PRIVATE penguin_core)
 add_test(NAME ParserLoopsTest COMMAND penguin_parser_loops_test)
 
-add_executable(penguin_parser_classes_test src/test_parser_classes.cpp)
+add_executable(penguin_parser_classes_test tests/test_parser_classes.cpp)
 target_link_libraries(penguin_parser_classes_test PRIVATE penguin_core)
 add_test(NAME ParserClassesTest COMMAND penguin_parser_classes_test)
 
