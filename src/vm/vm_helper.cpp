@@ -2,7 +2,7 @@
 #include "vm/utils/access_utils.h"
 #include "exceptions/error.h"
 #include <iostream>
-#include "vm/utils/deserializer.h"
+#include "compiler/utils/deserializer.h"
 #include "loader/module_loader.h"
 
 namespace vm

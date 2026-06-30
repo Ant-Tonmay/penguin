@@ -1,5 +1,5 @@
 #pragma once
-#include "chunk.h"
+#include "compiler/chunk.h"
 #include <vector>
 #include <unordered_map>
 

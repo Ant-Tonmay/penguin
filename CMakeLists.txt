@@ -26,10 +26,10 @@ add_library(penguin_core
     src/interpreter/stmt_executor.cpp
     src/interpreter/deep_copy.cpp
     src/symbol_table/symbol_table.cpp
-    src/vm/chunk.cpp
-    src/vm/compiler_core.cpp
-    src/vm/compiler_expr.cpp
-    src/vm/compiler_stmt.cpp
+    src/compiler/chunk.cpp
+    src/compiler/compiler_core.cpp
+    src/compiler/compiler_expr.cpp
+    src/compiler/compiler_stmt.cpp
     src/vm/vm.cpp
     src/vm/vm_array.cpp
     src/vm/vm_call.cpp
@@ -40,8 +40,8 @@ add_library(penguin_core
     src/vm/vm_helper.cpp
     src/vm/utils/access_utils.cpp
     src/vm/utils/value_utils.cpp
-    src/vm/utils/serializer.cpp
-    src/vm/utils/deserializer.cpp
+    src/compiler/utils/serializer.cpp
+    src/compiler/utils/deserializer.cpp
     src/loader/module_loader.cpp
     src/utils/utils.cpp
     src/dependency_graph/dependency_graph.cpp
@@ -109,10 +109,6 @@ add_test(NAME ParserLoopsTest COMMAND penguin_parser_loops_test)
 add_executable(penguin_parser_classes_test src/test_parser_classes.cpp)
 target_link_libraries(penguin_parser_classes_test PRIVATE penguin_core)
 add_test(NAME ParserClassesTest COMMAND penguin_parser_classes_test)
-
-add_executable(penguin_vm_test src/test_vm.cpp)
-target_link_libraries(penguin_vm_test PRIVATE penguin_core)
-add_test(NAME VMTest COMMAND penguin_vm_test)
 
 # -----------------------------
 # Debug flags

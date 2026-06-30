@@ -2,7 +2,7 @@
 #include <vector>
 #include <string>
 #include <fstream>
-#include "../value.h"
+#include "vm/value.h"
 
 namespace vm {
 

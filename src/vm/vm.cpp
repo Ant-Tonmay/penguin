@@ -1,11 +1,9 @@
 #include "vm/vm.h"
 
 #include "vm/utils/value_utils.h"
-#include "vm/utils/deserializer.h"
 #include <iostream>
 #include "exceptions/error.h"
 #include "interpreter/runtime_value.h"
-#include "loader/module_loader.h"
 
 namespace vm
 {   

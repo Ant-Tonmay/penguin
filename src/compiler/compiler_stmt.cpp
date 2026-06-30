@@ -1,5 +1,6 @@
 #include "exceptions/error.h"
-#include "vm/compiler.h"
+#include "compiler/compiler.h"
+
 
 namespace vm {
 

@@ -1,5 +1,5 @@
-#include "vm/utils/deserializer.h"
-#include "vm/utils/serializer.h" // For ValueTag enum
+#include "compiler/utils/deserializer.h"
+#include "compiler/utils/serializer.h" // For ValueTag enum
 #include <iostream>
 
 namespace vm {
