@@ -2,11 +2,8 @@
 
 #include "vm/utils/value_utils.h"
 #include <iostream>
-#include "exceptions/error.h"
-#include "interpreter/runtime_value.h"
-
 namespace vm
-{   
+{
     VM::VM()
     {
         // frames.reserve(1024); // Added this lines for callframe failure debug
@@ -66,7 +63,7 @@ namespace vm
         }
     }
 
-        
+
     void VM::push(Value value)
     {
         stack.push_back(value);
@@ -80,17 +77,17 @@ namespace vm
     }
 
     void VM::run(FunctionObject *script,const std::vector<FunctionObject*>& compiledFunctions)
-    {    
+    {
         trackObject(script);
         for (auto* fn : compiledFunctions)
         {
             trackObject(fn);
         }
-        executeModule(script);  
+        executeModule(script);
     }
 
     bool VM::executeInstruction(CallFrame &frame, uint8_t instruction)
-    {   
+    {
 
         //std::cout<< "Executing opcode "<< static_cast<int>(instruction)<< '\n';
         switch (instruction)
@@ -171,11 +168,11 @@ namespace vm
                 if (bit != builtinsModule->globals.end())
                 {
                     val = bit->second;
-                }else{ 
-                    // if val is nothing 
-                    // if it cause erros or unwanted behaviour gotta check this 
+                }else{
+                    // if val is nothing
+                    // if it cause erros or unwanted behaviour gotta check this
                     // for now it worked , i am gonna commit
-                    throwPenguinException(
+                    throwBuiltinException(
                         "NameError",
                         "Undefined variable '" + name + "'."
                     );
@@ -330,8 +327,10 @@ namespace vm
             else if (std::holds_alternative<std::string>(exc) && typeName == "String")
             {
                 matches = true;
-        auto& globals =
-    frame.function->module->globals;    }
+                auto& globals =
+                    frame.function->module->globals;
+                
+            }
             else if (std::holds_alternative<int64_t>(exc) && typeName == "Int")
             {
                 matches = true;
@@ -385,7 +384,7 @@ namespace vm
 
             if (!std::holds_alternative<InstanceObject*>(currentException))
             {
-                throwPenguinException(
+                throwBuiltinException(
                     "TypeError",
                     "Cannot throw value '" +
                     valueToString(currentException) +
@@ -413,7 +412,7 @@ namespace vm
 
             if (!isException)
             {
-                throwPenguinException(
+                throwBuiltinException(
                     "TypeError",
                     "Only objects derived from Exception can be thrown."
                 );
@@ -502,12 +501,12 @@ namespace vm
             auto& module =
                 *frame.function->module;
 
-            auto it = 
+            auto it =
                 module.globals.find(name);
 
             if(it == module.globals.end())
             {
-                throwPenguinException(
+                throwBuiltinException(
                     "NameError",
                     "Cannot export '" + name + "'"
                 );
@@ -557,7 +556,7 @@ namespace vm
 
             if (!imported)
             {
-                throwPenguinException(
+                throwBuiltinException(
                     "ImportError",
                     "Cannot load module '" + moduleName + "'"
                 );
@@ -572,7 +571,7 @@ namespace vm
                     if (callerModule->globals.find(name) !=
                         callerModule->globals.end())
                     {
-                        throwPenguinException(
+                        throwBuiltinException(
                             "NameError",
                             "Global '" + name + "' already exists"
                         );
@@ -597,7 +596,7 @@ namespace vm
 
                     if (it == imported->exports.end())
                     {
-                        throwPenguinException(
+                        throwBuiltinException(
                             "NameError",
                             "Module '" + moduleName +
                             "' does not export '" + memberName + "'"
@@ -608,7 +607,7 @@ namespace vm
                     if (callerModule->globals.find(memberName) !=
                         callerModule->globals.end())
                     {
-                        throwPenguinException(
+                        throwBuiltinException(
                             "NameError",
                             "Global '" + memberName + "' already exists"
                         );
@@ -655,7 +654,7 @@ namespace vm
 
             if (!std::holds_alternative<InstanceObject*>(receiverValue)) {
 
-                throwPenguinException(
+                throwBuiltinException(
                     "TypeError",
                     "Invalid receiver for super.");
                 return true;
@@ -665,7 +664,7 @@ namespace vm
 
             if (owner == nullptr || owner->parent == nullptr)
             {
-                throwPenguinException(
+                throwBuiltinException(
                     "RuntimeException",
                     "Current class has no superclass.");
 

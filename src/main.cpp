@@ -1,10 +1,5 @@
 #include <iostream>
-#include <fstream>
-#include <sstream>
-
 #include "lexer/lexer.h"
-#include "parser/parser.h"
-#include "interpreter/interpreter.h"
 #include "compiler/compiler.h"
 #include "vm/vm.h"
 #include "compiler/utils/serializer.h"
@@ -16,13 +11,12 @@
 #include "manifest/manifest_loader.h"
 
 static void printInfo() {
-    std::cout << "Hello i am penguin , A brand new programming language !!\n";
+    std::cout << "Hello i am Aham , A brand new programming language !!\n";
     std::cout << "Version: 0.1.0\n";
-    std::cout << "Meet my creator , Tonmay!!\n";
 }
 
 static void printVersion() {
-    std::cout << "Penguin Programming Language\n";
+    std::cout << "Aham Programming Language\n";
     std::cout << "Version: 0.1.0\n";
 }
 
@@ -31,7 +25,7 @@ int main(int argc, char* argv[]) {
         // ---- No arguments ----
     if (argc == 1) {
         std::cerr << "Error: no input file\n";
-        std::cerr << "Use: penguin <file.pg> or penguin --info\n";
+        std::cerr << "Use: aham <file.aha> or aham --info\n";
         return 1;
     }
 
@@ -66,14 +60,14 @@ int main(int argc, char* argv[]) {
     if (arg1 == "-r") {
         mode = Mode::RUN_FROM_FILE;
         if (argc != 3) {
-            std::cerr << "Usage: penguin -r <file.pgc>\n";
+            std::cerr << "Usage: aham -r <file.pgc>\n";
             return 1;
         }
         filename = argv[2];
     } else if (arg1 == "-c") {
         mode = Mode::COMPILE_TO_FILE;
         if (argc != 3) {
-            std::cerr << "Usage: penguin -c <file.pg>\n";
+            std::cerr << "Usage: aham -c <file.pg>\n";
             return 1;
         }
         filename = argv[2];

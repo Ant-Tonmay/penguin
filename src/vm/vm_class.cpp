@@ -3,8 +3,6 @@
 #include "vm/utils/access_utils.h"
 #include "vm/utils/value_utils.h"
 
-#include <iostream>
-
 namespace vm {
 
 bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
@@ -25,7 +23,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             Value methodValue = pop();
             Value klassValue = stack.back();
             if (!std::holds_alternative<ClassObject*>(klassValue)) {
-                throwPenguinException(
+                throwBuiltinException(
                     "TypeError",
                     "Cannot define method '" + name + "': expected a class object but got '" + typeOf(klassValue) + "'."
                 );
@@ -56,7 +54,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             uint8_t nameIdx = frame.function->chunk.code[frame.ip++];
             std::string name = std::get<std::string>(frame.function->chunk.constants[nameIdx]);
             Value objectValue = pop();
-            
+
             // Class shared fields
             if (std::holds_alternative<ClassObject*>(objectValue)) {
                 ClassObject* klass = std::get<ClassObject*>(objectValue);
@@ -64,7 +62,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
                     push(klass->sharedFields[name]);
                     return true;
                 }
-                throwPenguinException(
+                throwBuiltinException(
                     "NameError",
                     "Class '" +
                     klass->name +
@@ -87,7 +85,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
 
                 if (it == module->exports.end())
                 {
-                    throwPenguinException("NameError","Module '" + module->name + "' has no export '" + name + "'" );
+                    throwBuiltinException("NameError","Module '" + module->name + "' has no export '" + name + "'" );
                     return true;
                 }
 
@@ -97,7 +95,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
 
             // Invalid receiver
             if (!std::holds_alternative<InstanceObject*>(objectValue)) {
-                throwPenguinException(
+                throwBuiltinException(
                     "TypeError",
                     "Cannot access property '" +
                     name +
@@ -131,18 +129,18 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
                     push(value);
                     return true;
                 }
-                throwPenguinException("NameError", "Class '" + klass->name + "' has no shared property '" + name + "'.");
+                throwBuiltinException("NameError", "Class '" + klass->name + "' has no shared property '" + name + "'.");
                 return true;
             }
 
             if (!std::holds_alternative<InstanceObject*>(objectValue)) {
-                throwPenguinException("TypeError", "Cannot set property '" + name + "' on non-instance value.");
+                throwBuiltinException("TypeError", "Cannot set property '" + name + "' on non-instance value.");
                 return true;
             }
 
             InstanceObject* instance = std::get<InstanceObject*>(objectValue);
             ClassObject* contextClass = frame.function->isMethod ? frame.function->ownerClass : nullptr;
-            
+
             if (instance->klass->sharedFields.count(name)) {
                 instance->klass->sharedFields[name] = value;
                 push(value);
@@ -152,7 +150,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
             if (instance->klass->fields.count(name)) {
                 AccessModifier access = instance->klass->fields[name];
                 if (!checkAccess(instance->klass, contextClass, access)) {
-                    throwPenguinException(
+                    throwBuiltinException(
                         "RuntimeException",
                         "Access denied to field '" + name + "': field is not accessible from this context."
                     );
@@ -244,7 +242,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
         case OP_INHERIT: {
             Value superValue = pop();
             if (!std::holds_alternative<ClassObject*>(superValue)) {
-                throwPenguinException("TypeError", "Superclass must be a class.");
+                throwBuiltinException("TypeError", "Superclass must be a class.");
                 return true;
             }
             ClassObject* superclass = std::get<ClassObject*>(superValue);
@@ -296,7 +294,7 @@ bool VM::handleClassOp(CallFrame& frame, uint8_t instruction) {
 
             Value klassValue = stack.back();
             ClassObject* klass = std::get<ClassObject*>(klassValue);
-            
+
             if (modifier == static_cast<uint8_t>(AccessModifier::SHARED)) {
                 klass->sharedFields[name] = std::monostate{};
             } else {

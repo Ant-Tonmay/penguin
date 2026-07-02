@@ -1,8 +1,6 @@
 #include "vm/vm.h"
 
 #include "vm/utils/value_utils.h"
-
-#include <iostream>
 #include <vector>
 
 namespace vm {
@@ -36,13 +34,13 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
             Value idxValue = pop();
             Value arrValue = pop();
             if (!std::holds_alternative<ArrayObject*>(arrValue)) {
-                throwPenguinException("TypeError", "Index operation expects an array, got '" + typeOf(arrValue) + "'.");
+                throwBuiltinException("TypeError", "Index operation expects an array, got '" + typeOf(arrValue) + "'.");
                 return true;
             }
             ArrayObject* arr = std::get<ArrayObject*>(arrValue);
             int idx = asInt(idxValue);
             if (idx < 0 || static_cast<size_t>(idx) >= arr->length) {
-                throwPenguinException("IndexOutOfBoundsException",
+                throwBuiltinException("IndexOutOfBoundsException",
                                      "array index " + std::to_string(idx) + " out of bounds (length " + std::to_string(arr->length) + ").");
                 return true;
             }
@@ -55,13 +53,13 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
             Value idxValue = pop();
             Value arrValue = pop();
             if (!std::holds_alternative<ArrayObject*>(arrValue)) {
-                throwPenguinException("TypeError", "Index operation expects an array, got '" + typeOf(arrValue) + "'.");
+                throwBuiltinException("TypeError", "Index operation expects an array, got '" + typeOf(arrValue) + "'.");
                 return true;
             }
             ArrayObject* arr = std::get<ArrayObject*>(arrValue);
             int idx = asInt(idxValue);
             if (idx < 0 || static_cast<size_t>(idx) >= arr->length) {
-                throwPenguinException("IndexOutOfBoundsException",
+                throwBuiltinException("IndexOutOfBoundsException",
                                      "array index " + std::to_string(idx) + " out of bounds (length " + std::to_string(arr->length) + ").");
                 return true;
             }
@@ -84,7 +82,7 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
 
             int size = asInt(pop());
             if (size < 0) {
-                throwPenguinException("ValueError", "shape() size cannot be negative.");
+                throwBuiltinException("ValueError", "shape() size cannot be negative.");
                 return true;
             }
 
@@ -104,13 +102,13 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
             Value value = pop();
             Value arrValue = pop();
             if (!std::holds_alternative<ArrayObject*>(arrValue)) {
-                throwPenguinException("TypeError", "push() expects an array as first argument.");
+                throwBuiltinException("TypeError", "push() expects an array as first argument.");
                 return true;
             }
 
             ArrayObject* arr = std::get<ArrayObject*>(arrValue);
             if (arr->isFixed) {
-                throwPenguinException("TypeError", "Cannot push to a fixed-size array.");
+                throwBuiltinException("TypeError", "Cannot push to a fixed-size array.");
                 return true;
             }
 
@@ -133,7 +131,7 @@ bool VM::handleArrayOp(CallFrame& frame, uint8_t instruction) {
         case OP_ARRAY_LENGTH: {
             Value arrValue = pop();
             if (!std::holds_alternative<ArrayObject*>(arrValue)) {
-                throwPenguinException("TypeError", "length() expects an array argument.");
+                throwBuiltinException("TypeError", "length() expects an array argument.");
                 return true;
             }
             ArrayObject* arr = std::get<ArrayObject*>(arrValue);

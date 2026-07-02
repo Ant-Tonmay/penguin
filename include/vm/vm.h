@@ -67,7 +67,7 @@ private:
     bool handleCastOp(uint8_t instruction);
     bool handleInputOp(uint8_t instruction);
     void registerBuiltins();
-    void throwPenguinException(const std::string& className, const std::string& message);
+    void throwBuiltinException(const std::string& className, const std::string& message);
     // ClassObject* resolveExceptionClass(const std::string& className);
     
     ModuleObject* loadModule(const std::string& importerFile,const std::string& moduleName);

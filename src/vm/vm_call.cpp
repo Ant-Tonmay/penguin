@@ -1,7 +1,5 @@
 #include "vm/vm.h"
 
-#include <iostream>
-
 namespace vm {
 
 bool VM::handleCall(CallFrame& frame) {
@@ -10,9 +8,9 @@ bool VM::handleCall(CallFrame& frame) {
 
     if (std::holds_alternative<ClassObject*>(calleeValue)) {
         ClassObject* klass = std::get<ClassObject*>(calleeValue);
-        
+
         if (klass->isTrait) {
-            throwPenguinException("TypeError", "Cannot instantiate trait '" + klass->name + "' directly.");
+            throwBuiltinException("TypeError", "Cannot instantiate trait '" + klass->name + "' directly.");
             return true;
         }
 
@@ -35,12 +33,12 @@ bool VM::handleCall(CallFrame& frame) {
                 return true;
             }
 
-            throwPenguinException("TypeError", "No matching constructor for class '" + klass->name + "' with " + std::to_string(argCount) + " arguments.");
+            throwBuiltinException("TypeError", "No matching constructor for class '" + klass->name + "' with " + std::to_string(argCount) + " arguments.");
             return true;
         }
 
         if (argCount != 0) {
-            throwPenguinException("TypeError", "Expected 0 arguments for default constructor of '" + klass->name + "' but got " + std::to_string(argCount) + ".");
+            throwBuiltinException("TypeError", "Expected 0 arguments for default constructor of '" + klass->name + "' but got " + std::to_string(argCount) + ".");
             return true;
         }
 
@@ -63,7 +61,7 @@ bool VM::handleCall(CallFrame& frame) {
         }
 
         if (!matchingMethod) {
-            throwPenguinException("TypeError", "No matching overload for bound method with " + std::to_string(argCount) + " arguments.");
+            throwBuiltinException("TypeError", "No matching overload for bound method with " + std::to_string(argCount) + " arguments.");
             return true;
         }
 
@@ -73,13 +71,13 @@ bool VM::handleCall(CallFrame& frame) {
     }
 
     if (!std::holds_alternative<FunctionObject*>(calleeValue)) {
-        throwPenguinException("TypeError", "Tried to call a non-function value.");
+        throwBuiltinException("TypeError", "Tried to call a non-function value.");
         return true;
     }
 
     FunctionObject* callee = std::get<FunctionObject*>(calleeValue);
     if (argCount != callee->arity) {
-        throwPenguinException("TypeError", "Function '" + callee->name + "' expected " + std::to_string(callee->arity) + " arguments but got " + std::to_string(argCount) + ".");
+        throwBuiltinException("TypeError", "Function '" + callee->name + "' expected " + std::to_string(callee->arity) + " arguments but got " + std::to_string(argCount) + ".");
         return true;
     }
 

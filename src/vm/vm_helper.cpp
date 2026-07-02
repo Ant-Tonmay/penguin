@@ -1,7 +1,6 @@
 #include "vm/vm.h"
 #include "vm/utils/access_utils.h"
 #include "exceptions/error.h"
-#include <iostream>
 #include "compiler/utils/deserializer.h"
 #include "loader/module_loader.h"
 
@@ -29,7 +28,7 @@ namespace vm
 
             if (!checkAccess(lookupClass, contextClass, fieldIt->second))
             {
-                throwPenguinException(
+                throwBuiltinException(
                     "RuntimeException",
                     "Access denied to field '" + name + "'.");
                 return true;
@@ -54,7 +53,7 @@ namespace vm
 
             if (!checkAccess(lookupClass, contextClass, access))
             {
-                throwPenguinException(
+                throwBuiltinException(
                     "RuntimeException",
                     "Access denied to method '" + name + "'.");
                 return true;
@@ -69,7 +68,7 @@ namespace vm
             return true;
         }
 
-        throwPenguinException(
+        throwBuiltinException(
             "NameError",
             "Undefined property '" + name + "'.");
 
@@ -117,10 +116,10 @@ namespace vm
     }
 
 
-    void VM::throwPenguinException(const std::string &className, const std::string &message)
+    void VM::throwBuiltinException(const std::string &className, const std::string &message)
     {
         // Look up the built-in class from globals
-        
+
         auto& globals = builtinsModule->globals;
 
         auto it = globals.find(className);
@@ -163,7 +162,7 @@ namespace vm
             push(inst);
             frames.back().ip = handler.catchJumpOffset;
             // Signal to the caller to restart the dispatch loop
-            throw PenguinThrow{}; // ← a new internal signal (see 2.2)
+            throw ThrowExceptionSignal{}; // a new internal signal
         }
         else
         {
@@ -189,11 +188,11 @@ namespace vm
             {
                 if (!executeInstruction(frame, instruction))
                 {
-                    frames.pop_back(); 
+                    frames.pop_back();
                     break;
                 }
             }
-            catch (const PenguinThrow&)
+            catch (const ThrowExceptionSignal&)
             {
                 continue;
             }
@@ -222,11 +221,11 @@ namespace vm
     }
 
     ModuleObject* VM::loadModule(const std::string& importerFile,const std::string& moduleName)
-    {   
+    {
 
         //std::cout << "Importer file: " << importerFile << '\n';
        // std::cout << "Module name:   " << moduleName << '\n';
-            
+
         auto it = loadedModules.find(moduleName);
 
         if (it != loadedModules.end())
@@ -247,7 +246,7 @@ namespace vm
         //std::cout << "Resolved file: " << filename << '\n';
         module->filePath = filename;
 
-        
+
 
         std::vector<FunctionObject*> compiledFunctions;
         FunctionObject* script = nullptr;
@@ -307,6 +306,6 @@ namespace vm
         // }
         return module;
     }
-    
+
 
 };
