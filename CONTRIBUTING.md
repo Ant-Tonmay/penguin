@@ -1,4 +1,4 @@
-# Contributing to Penguin
+# Contributing to aham
 
 This project welcomes contributions to the language, runtime, VM, and tests.
 

@@ -1,4 +1,4 @@
-# Penguin Architecture
+# aham Architecture
 
 This document maps the current implementation so contributors can quickly find where to add or fix language features.
 
