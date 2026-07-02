@@ -1,4 +1,4 @@
-# Penguin Programming Language
+# Aham Programming Language
 
 Penguin is a C++-implemented programming language with:
 - A lexer and parser that build an AST
